@@ -34,7 +34,6 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
-import com.google.android.gms.location.places.ui.PlacePicker;
 
 public class LocationEditTextPreference extends EditTextPreference {
     static final private int DEFAULT_MINIMUM_LOCATION_LENGTH = 2;
