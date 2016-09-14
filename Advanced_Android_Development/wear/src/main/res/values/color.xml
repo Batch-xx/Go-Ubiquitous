@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="watch_background">#1ca8f4</color>
+    <!--  Watch Colors -->
+    <color name="backgroundColor">#1ca8f4</color>
+    <color name="digitalDateColor">#ffffff</color>
+    <color name="hourColor">#ffffff</color>
+    <color name="minuteColor">#ffffff</color>
+    <color name="secondColor">#ffffff</color>
+    <color name="am_pmColor">#ffffff</color>
+    <color name="colonColor">#ffffff</color>
 </resources>
