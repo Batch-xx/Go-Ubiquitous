@@ -1,33 +1,37 @@
 package com.example.android.sunshine.wear;
 
-import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Resources;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Message;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.wearable.watchface.CanvasWatchFaceService;
+import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.SurfaceHolder;
 
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataEventBuffer;
+import com.google.android.gms.wearable.Wearable;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
 
 public class WeatherWatchFaceService extends CanvasWatchFaceService {
     private static final String TAG = "WeatherWatchService";
@@ -41,9 +45,10 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         return new Engine();
     }
 
-    private class Engine extends CanvasWatchFaceService.Engine{
+    private class Engine extends CanvasWatchFaceService.Engine implements DataApi.DataListener
+            , GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
         private static final int MSG_UPDATE_TIME = 0;
-        private boolean mAmbient = false;
+        private boolean mIsAmbientMode = false;
         boolean mRegisteredReceiver = false;
         Paint mBackgroundPaint;
         Paint mDatePaint;
@@ -59,6 +64,17 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         SimpleDateFormat mDayOfWeekFormat;
         java.text.DateFormat mDateFormat;
 
+        int mInteractiveBackgroundColor;
+        int mAmbientBackgroundColor;
+        int mInteractiveHourColor;
+        int mAmbientHourColor;
+        int mInteractiveMinuteColor;
+        int mAmbientMinuteColor;
+        int mInteractiveAmPmColor;
+        int mAmbientAmPmColor;
+        int mInteractiveColonColor;
+        int mAmbientColonColor;
+        boolean mLowBitAmbient;
 
         final Handler mUpdateTimerHandler = new Handler(){
             @Override
@@ -80,7 +96,14 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             }
         };
 
-        final BroadcastReceiver mTimeZoneReciever = new BroadcastReceiver() {
+        GoogleApiClient mGoogleApiClient = new GoogleApiClient.Builder(
+                WeatherWatchFaceService.this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(Wearable.API)
+                .build();
+
+        final BroadcastReceiver mReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 mCalendar.setTimeZone(TimeZone.getDefault());
@@ -96,6 +119,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 Log.d(TAG, "onCreate");
             }
             super.onCreate(holder);
+
+            setWatchFaceStyle(new WatchFaceStyle.Builder(WeatherWatchFaceService.this)
+            .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
+            .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
+            .setShowSystemUiTime(false)
+            .build());
+
             Resources resources = WeatherWatchFaceService.this.getResources();
 
             mBackgroundPaint = new Paint();
@@ -109,9 +139,29 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             mCalendar = Calendar.getInstance();
             mDate = new Date();
+
+            mInteractiveBackgroundColor =  resources.getColor(R.color.backgroundColor,null);
+            mAmbientBackgroundColor = resources.getColor(R.color.ambientBackgroundColor,null);
+            mInteractiveHourColor = resources.getColor(R.color.hourColor, null);
+            mAmbientHourColor =  resources.getColor(R.color.ambientHourColor,null);
+            mInteractiveMinuteColor = resources.getColor(R.color.minuteColor,null);
+            mAmbientMinuteColor = resources.getColor(R.color.ambientMinuteColor,null);
+            mInteractiveAmPmColor = resources.getColor(R.color.am_pmColor,null);
+            mAmbientMinuteColor = resources.getColor(R.color.ambientAmPmColor,null);
+            mInteractiveColonColor = resources.getColor(R.color.colonColor,null);
+            mAmbientColonColor = resources.getColor(R.color.ambientColonColor,null);
+
+
+
+
             initFormats();
         }
 
+        @Override
+        public void onDestroy() {
+            mUpdateTimerHandler.removeMessages(MSG_UPDATE_TIME);
+            super.onDestroy();
+        }
 
         private Paint createTextPaint(int defaultInteractiveColor, Typeface typeface){
             Paint paint = new Paint();
@@ -121,6 +171,29 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             return paint;
         }
 
+        @Override
+        public void onVisibilityChanged(boolean visible) {
+            if(Log.isLoggable(TAG, Log.DEBUG)){
+                Log.d(TAG, "onVisiblityChanged:" + visible);
+            }
+            super.onVisibilityChanged(visible);
+
+            if(visible) {
+                mGoogleApiClient.connect();
+                registerReciever();
+
+                mCalendar.setTimeZone(TimeZone.getDefault());
+                initFormats();
+            }else{
+                unregisterReciever();
+
+                if(mGoogleApiClient != null && mGoogleApiClient.isConnected()){
+                    Wearable.DataApi.removeListener(mGoogleApiClient,this);
+                    mGoogleApiClient.disconnect();
+                }
+            }
+            updateTimer();
+        }
         private  void initFormats(){
             mDayOfWeekFormat = new SimpleDateFormat("EEEE", Locale.getDefault());
             mDayOfWeekFormat.setCalendar(mCalendar);
@@ -128,23 +201,74 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mDateFormat.setCalendar(mCalendar);
         }
 
+        private void registerReciever(){
+            if(mRegisteredReceiver){
+                return;
+            }
+            mRegisteredReceiver = true;
+            IntentFilter filter = new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED);
+            filter.addAction(Intent.ACTION_LOCALE_CHANGED);
+            WeatherWatchFaceService.this.registerReceiver(mReceiver, filter);
+        }
+
+        private void unregisterReciever(){
+            if(!mRegisteredReceiver){
+                return;
+            }
+            mRegisteredReceiver = false;
+            WeatherWatchFaceService.this.unregisterReceiver(mReceiver);
+        }
+
+        private void updateTimer(){
+            if(Log.isLoggable(TAG, Log.DEBUG)){
+                Log.d(TAG,"updateTimer");
+            }
+            mUpdateTimerHandler.removeMessages(MSG_UPDATE_TIME);
+            if(shouldTimerBeRunning()){
+                mUpdateTimerHandler.sendEmptyMessage(MSG_UPDATE_TIME);
+            }
+        }
         @Override
         public void onPropertiesChanged(Bundle properties) {
             super.onPropertiesChanged(properties);
-            /*get device feature (burn-in, low-bit ambient)*/
+            boolean burnInProtection = properties.getBoolean(PROPERTY_BURN_IN_PROTECTION, false);
+            mHourPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
+            mLowBitAmbient = properties.getBoolean(PROPERTY_LOW_BIT_AMBIENT, false);
         }
 
         @Override
         public void onTimeTick() {
             super.onTimeTick();
-            /* the time changed */
+            invalidate();
         }
 
         @Override
         public void onAmbientModeChanged(boolean inAmbientMode) {
-            mAmbient = inAmbientMode;
-            /* the wearable switched between modes */
+            mIsAmbientMode = inAmbientMode;
+            adjustPaintToColorMode(mBackgroundPaint, mInteractiveBackgroundColor, mAmbientBackgroundColor);
+            adjustPaintToColorMode(mHourPaint, mInteractiveHourColor, mAmbientHourColor);
+            adjustPaintToColorMode(mMinutePaint, mInteractiveMinuteColor, mAmbientMinuteColor);
+            adjustPaintToColorMode(mAmPmPaint, mInteractiveAmPmColor, mAmbientAmPmColor);
+            adjustPaintToColorMode(mColonPaint, mInteractiveColonColor, mAmbientColonColor);
+
+            if(mLowBitAmbient){
+                boolean antiAlias = !inAmbientMode;
+                mDatePaint.setAntiAlias(antiAlias);
+                mHourPaint.setAntiAlias(antiAlias);
+                mMinutePaint.setAntiAlias(antiAlias);
+                mSecondPaint.setAntiAlias(antiAlias);
+                mAmPmPaint.setAntiAlias(antiAlias);
+                mColonPaint.setAntiAlias(antiAlias);
+            }
+            invalidate();
+            updateTimer();
         }
+
+        private void adjustPaintToColorMode(Paint paint, int interactiveColor, int ambientColor){
+            paint.setColor(isInAmbientMode() ? ambientColor : interactiveColor);
+        }
+
+
 
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
@@ -152,14 +276,30 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             /* draw your watch face */
         }
 
-        @Override
-        public void onVisibilityChanged(boolean visible) {
-            super.onVisibilityChanged(visible);
-            /* the watch face became visible or invisible */
-        }
+
 
         private boolean shouldTimerBeRunning(){
-            return isVisible() && !mAmbient;
+            return isVisible() && !mIsAmbientMode;
+        }
+
+        @Override
+        public void onConnected(@Nullable Bundle bundle) {
+
+        }
+
+        @Override
+        public void onConnectionSuspended(int i) {
+
+        }
+
+        @Override
+        public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+        }
+
+        @Override
+        public void onDataChanged(DataEventBuffer dataEventBuffer) {
+
         }
     }
 }
