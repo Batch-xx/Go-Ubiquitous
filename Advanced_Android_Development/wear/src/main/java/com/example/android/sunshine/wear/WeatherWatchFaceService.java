@@ -19,6 +19,7 @@ import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.SurfaceHolder;
+import android.view.WindowInsets;
 
 
 import com.google.android.gms.common.ConnectionResult;
@@ -63,6 +64,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         Date mDate;
         SimpleDateFormat mDayOfWeekFormat;
         java.text.DateFormat mDateFormat;
+
+        boolean mShouldDrawColons;
 
         int mInteractiveBackgroundColor;
         int mAmbientBackgroundColor;
@@ -156,6 +159,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             initFormats();
         }
+
 
         @Override
         public void onDestroy() {
@@ -268,12 +272,24 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             paint.setColor(isInAmbientMode() ? ambientColor : interactiveColor);
         }
 
-
+        @Override
+        public void onApplyWindowInsets(WindowInsets insets) {
+            super.onApplyWindowInsets(insets);
+        }
 
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
-            super.onDraw(canvas, bounds);
-            /* draw your watch face */
+            long now = System.currentTimeMillis();
+            mCalendar.setTimeInMillis(now);
+            mDate.setTime(now);
+            boolean is24Hour = DateFormat.is24HourFormat(WeatherWatchFaceService.this);
+
+            mShouldDrawColons = (System.currentTimeMillis() % 1000) < 500;
+
+            canvas.drawRect(0,0,bounds.width(), bounds.height(), mBackgroundPaint);
+
+
+
         }
 
 
