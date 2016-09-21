@@ -49,6 +49,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
     private class Engine extends CanvasWatchFaceService.Engine implements DataApi.DataListener
             , GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
         private static final int MSG_UPDATE_TIME = 0;
+        static final String COLON_STRING = ":";
         private boolean mIsAmbientMode = false;
         boolean mRegisteredReceiver = false;
         Paint mBackgroundPaint;
@@ -64,6 +65,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         Date mDate;
         SimpleDateFormat mDayOfWeekFormat;
         java.text.DateFormat mDateFormat;
+
+        float mXOffest, mYOffset;
+
 
         boolean mShouldDrawColons;
 
@@ -130,6 +134,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             .build());
 
             Resources resources = WeatherWatchFaceService.this.getResources();
+
+            mYOffset = resources.getDimension(R.dimen.y_offset_round);
 
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(resources.getColor(R.color.backgroundColor, null));
@@ -268,13 +274,26 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             updateTimer();
         }
 
-        private void adjustPaintToColorMode(Paint paint, int interactiveColor, int ambientColor){
-            paint.setColor(isInAmbientMode() ? ambientColor : interactiveColor);
-        }
+
 
         @Override
         public void onApplyWindowInsets(WindowInsets insets) {
             super.onApplyWindowInsets(insets);
+
+            Resources resources =  WeatherWatchFaceService.this.getResources();
+            boolean isRound = insets.isRound();
+            mXOffest = resources.getDimension(isRound ? R.dimen.x_offest_round : R.dimen.x_offest_square);
+            float textSize = resources.getDimension(isRound ? R.dimen.text_size_round : R.dimen.text_size_square);
+            float amPmTextSize = resources.getDimension(isRound ? R.dimen.am_pm_text_round : R.dimen.am_pm_text_sqaure);
+
+            mDatePaint.setTextSize(resources.getDimension(R.dimen.date_text_size));
+            mHourPaint.setTextSize(textSize);
+            mMinutePaint.setTextSize(textSize);
+            mSecondPaint.setTextSize(textSize);
+            mAmPmPaint.setTextSize(textSize);
+            mColonPaint.setTextSize(textSize);
+
+            mColonWidth = mColonPaint.measureText(COLON_STRING);
         }
 
         @Override
@@ -288,8 +307,18 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             canvas.drawRect(0,0,bounds.width(), bounds.height(), mBackgroundPaint);
 
-
-
+            float x = mXOffest;
+            String hourString;
+            if(is24Hour){
+                hourString = formatTwoDigitNumber(mCalendar.get(Calendar.HOUR_OF_DAY));
+            }else{
+                int hour = mCalendar.get(Calendar.HOUR);
+                if(hour == 0){
+                    hour = 12;
+                }
+                hourString = String.valueOf(hour);
+            }
+            canvas.drawText(hourString,x,mYOffset, mHourPaint);
         }
 
 
@@ -316,6 +345,14 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         @Override
         public void onDataChanged(DataEventBuffer dataEventBuffer) {
 
+        }
+
+        private void adjustPaintToColorMode(Paint paint, int interactiveColor, int ambientColor){
+            paint.setColor(isInAmbientMode() ? ambientColor : interactiveColor);
+        }
+
+        private String formatTwoDigitNumber(int hour) {
+            return String.format("%02d", hour);
         }
     }
 }
