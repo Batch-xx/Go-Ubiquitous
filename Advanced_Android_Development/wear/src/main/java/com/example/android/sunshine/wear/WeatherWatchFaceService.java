@@ -140,7 +140,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(resources.getColor(R.color.backgroundColor, null));
             mDatePaint = createTextPaint(resources.getColor(R.color.digitalDateColor,null),NORMAL_TYPEFACE);
-            mHourPaint = createTextPaint(resources.getColor(R.color.hourColor,null),BOLD_TYPEFACE);
+            mHourPaint = createTextPaint(resources.getColor(R.color.hourColor,null),NORMAL_TYPEFACE);
             mMinutePaint = createTextPaint(resources.getColor(R.color.minuteColor,null),NORMAL_TYPEFACE);
             mSecondPaint = createTextPaint(resources.getColor(R.color.secondColor,null),NORMAL_TYPEFACE);
             mAmPmPaint = createTextPaint(resources.getColor(R.color.am_pmColor, null), NORMAL_TYPEFACE);
@@ -299,15 +299,19 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
             long now = System.currentTimeMillis();
+            float x_center = bounds.width()/2 - 10;
+            float y_colon_offset  = mYOffset - 8;
+            boolean is24Hour = DateFormat.is24HourFormat(WeatherWatchFaceService.this);
+
             mCalendar.setTimeInMillis(now);
             mDate.setTime(now);
-            boolean is24Hour = DateFormat.is24HourFormat(WeatherWatchFaceService.this);
 
             mShouldDrawColons = (System.currentTimeMillis() % 1000) < 500;
 
+            //Background
             canvas.drawRect(0,0,bounds.width(), bounds.height(), mBackgroundPaint);
 
-            float x = mXOffest;
+            //Hours
             String hourString;
             if(is24Hour){
                 hourString = formatTwoDigitNumber(mCalendar.get(Calendar.HOUR_OF_DAY));
@@ -318,7 +322,18 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 }
                 hourString = String.valueOf(hour);
             }
-            canvas.drawText(hourString,x,mYOffset, mHourPaint);
+            float hourXOffset  = x_center -  mHourPaint.measureText(hourString);
+            canvas.drawText(hourString,hourXOffset,mYOffset, mHourPaint);
+
+            //colon
+            if(isInAmbientMode()  || mShouldDrawColons){
+                canvas.drawText(COLON_STRING,x_center,y_colon_offset,mColonPaint);
+            }
+
+            //Minutes
+            String minuteString = formatTwoDigitNumber(mCalendar.get(Calendar.MINUTE));
+            float minuteXOffset = x_center + mColonPaint.measureText(COLON_STRING);
+            canvas.drawText(minuteString, minuteXOffset, mYOffset,mMinutePaint);
         }
 
 
