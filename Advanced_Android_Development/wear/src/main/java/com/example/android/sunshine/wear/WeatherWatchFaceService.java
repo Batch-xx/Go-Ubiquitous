@@ -63,6 +63,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         Paint mMonthPaint;
         Paint mDayPaint;
         Paint mDayofMonthPaint;
+        Paint mSeparatePaint;
         Paint mYearPaint;
 
         Calendar mCalendar;
@@ -71,7 +72,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         java.text.DateFormat mDateFormat;
 
         float   mYTimeOffset,
-                mYDateOffset;
+                mYDateOffset,
+                mYSeparateOffset;
 
 
         boolean mShouldDrawColons;
@@ -88,6 +90,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         int mAmbientColonColor;
         int mInteractiveDateColor;
         int mAmbientDateColor;
+        int mInteractiveSeparateColor;
+        int mAmbientSeparateColor;
         boolean mLowBitAmbient;
 
         final Handler mUpdateTimerHandler = new Handler(){
@@ -144,7 +148,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             mYTimeOffset = resources.getDimension(R.dimen.y_time_offset_round);
             mYDateOffset = resources.getDimension(R.dimen.y_date_offset_round);
-
+            mYSeparateOffset = resources.getDimensionPixelOffset(R.dimen.y_separate_offset);
 
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(resources.getColor(R.color.backgroundColor, null));
@@ -158,6 +162,10 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mDayPaint = createTextPaint(resources.getColor(R.color.dateColor,null),NORMAL_TYPEFACE);
             mYearPaint = createTextPaint(resources.getColor(R.color.dateColor,null),NORMAL_TYPEFACE);
             mDayofMonthPaint = createTextPaint(resources.getColor(R.color.dateColor,null),NORMAL_TYPEFACE);
+
+            mSeparatePaint = new Paint();
+            mSeparatePaint.setColor(resources.getColor(R.color.separateColor, null));
+
 
             mCalendar = Calendar.getInstance();
             mDate = new Date();
@@ -174,6 +182,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mAmbientColonColor = resources.getColor(R.color.ambientColonColor,null);
             mInteractiveDateColor = resources.getColor(R.color.dateColor, null);
             mAmbientDateColor = resources.getColor(R.color.ambientDateColor,null);
+            mInteractiveSeparateColor = resources.getColor(R.color.separateColor,null);
+            mAmbientSeparateColor = resources.getColor(R.color.ambientSeparateColor,null);
 
             initFormats();
         }
@@ -282,6 +292,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             adjustPaintToColorMode(mDayPaint, mInteractiveDateColor, mAmbientDateColor);
             adjustPaintToColorMode(mMonthPaint, mInteractiveDateColor, mAmbientDateColor);
             adjustPaintToColorMode(mDayofMonthPaint,mInteractiveDateColor, mAmbientDateColor);
+            adjustPaintToColorMode(mSeparatePaint, mInteractiveSeparateColor, mAmbientSeparateColor);
 
             if(mLowBitAmbient){
                 boolean antiAlias = !inAmbientMode;
@@ -295,12 +306,15 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mDayPaint.setAntiAlias(antiAlias);
                 mYearPaint.setAntiAlias(antiAlias);
                 mDayofMonthPaint.setAntiAlias(antiAlias);
+                mSeparatePaint.setAntiAlias(antiAlias);
             }
             invalidate();
             updateTimer();
         }
 
-
+        private void adjustPaintToColorMode(Paint paint, int interactiveColor, int ambientColor){
+            paint.setColor(isInAmbientMode() ? ambientColor : interactiveColor);
+        }
 
         @Override
         public void onApplyWindowInsets(WindowInsets insets) {
@@ -384,8 +398,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             //Year
             String yearString = String.valueOf(mCalendar.get(Calendar.YEAR));
-            float yearOffset = x_date_center + mDayofMonthPaint.measureText(dayMonthString) + 5;
+            float yearOffset = x_date_center + mDayofMonthPaint.measureText(dayMonthString) + 10;
             canvas.drawText(yearString,yearOffset,mYDateOffset,mYearPaint);
+
+            //Separator
+            float start_x =  bounds.width()/2 - 30;
+            float end_x =  bounds.width()/2 + 30;
+            canvas.drawLine(start_x, mYSeparateOffset, end_x,mYSeparateOffset,mSeparatePaint);
 
 
 
@@ -423,9 +442,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
         }
 
-        private void adjustPaintToColorMode(Paint paint, int interactiveColor, int ambientColor){
-            paint.setColor(isInAmbientMode() ? ambientColor : interactiveColor);
-        }
+
 
         private String formatTwoDigitNumber(int hour) {
             return String.format("%02d", hour);

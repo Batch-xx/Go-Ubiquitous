@@ -9,6 +9,7 @@
     <color name="am_pmColor">#ffffff</color>
     <color name="colonColor">#ffffff</color>
     <color name="dateColor">#ffffff</color>
+    <color name="separateColor">#ffffff</color>
 
     <color name="ambientBackgroundColor">#000000</color>
     <color name="ambientHourColor">#ffffff</color>
@@ -16,4 +17,5 @@
     <color name="ambientAmPmColor">#ffffff</color>
     <color name="ambientColonColor">#ffffff</color>
     <color name="ambientDateColor">#ffffff</color>
+    <color name="ambientSeparateColor">#ffffff</color>
 </resources>
