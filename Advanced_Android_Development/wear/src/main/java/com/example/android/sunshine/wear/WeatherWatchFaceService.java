@@ -62,6 +62,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         float mColonWidth;
         Paint mMonthPaint;
         Paint mDayPaint;
+        Paint mDayofMonthPaint;
         Paint mYearPaint;
 
         Calendar mCalendar;
@@ -156,6 +157,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mMonthPaint = createTextPaint(resources.getColor(R.color.dateColor,null), NORMAL_TYPEFACE);
             mDayPaint = createTextPaint(resources.getColor(R.color.dateColor,null),NORMAL_TYPEFACE);
             mYearPaint = createTextPaint(resources.getColor(R.color.dateColor,null),NORMAL_TYPEFACE);
+            mDayofMonthPaint = createTextPaint(resources.getColor(R.color.dateColor,null),NORMAL_TYPEFACE);
 
             mCalendar = Calendar.getInstance();
             mDate = new Date();
@@ -172,10 +174,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mAmbientColonColor = resources.getColor(R.color.ambientColonColor,null);
             mInteractiveDateColor = resources.getColor(R.color.dateColor, null);
             mAmbientDateColor = resources.getColor(R.color.ambientDateColor,null);
-
-
-
-
 
             initFormats();
         }
@@ -257,9 +255,11 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             super.onPropertiesChanged(properties);
             boolean burnInProtection = properties.getBoolean(PROPERTY_BURN_IN_PROTECTION, false);
             mHourPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
+            mMinutePaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
             mMonthPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
             mDayPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
             mYearPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
+            mDayofMonthPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
             mLowBitAmbient = properties.getBoolean(PROPERTY_LOW_BIT_AMBIENT, false);
         }
 
@@ -281,6 +281,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             adjustPaintToColorMode(mMonthPaint, mInteractiveDateColor, mAmbientDateColor);
             adjustPaintToColorMode(mDayPaint, mInteractiveDateColor, mAmbientDateColor);
             adjustPaintToColorMode(mMonthPaint, mInteractiveDateColor, mAmbientDateColor);
+            adjustPaintToColorMode(mDayofMonthPaint,mInteractiveDateColor, mAmbientDateColor);
 
             if(mLowBitAmbient){
                 boolean antiAlias = !inAmbientMode;
@@ -293,6 +294,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mMonthPaint.setAntiAlias(antiAlias);
                 mDayPaint.setAntiAlias(antiAlias);
                 mYearPaint.setAntiAlias(antiAlias);
+                mDayofMonthPaint.setAntiAlias(antiAlias);
             }
             invalidate();
             updateTimer();
@@ -320,6 +322,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mMonthPaint.setTextSize(dateTextSize);
             mDayPaint.setTextSize(dateTextSize);
             mYearPaint.setTextSize(dateTextSize);
+            mDayofMonthPaint.setTextSize(dateTextSize);
 
             mColonWidth = mColonPaint.measureText(COLON_STRING);
         }
@@ -328,7 +331,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         public void onDraw(Canvas canvas, Rect bounds) {
             long now = System.currentTimeMillis();
             float x_time_center = bounds.width()/2 - 10;
-            float x_date_center = bounds.width()/2 - 10;
+            float x_date_center = bounds.width()/2 + 5;
             float y_colon_offset  = mYTimeOffset - 8;
             boolean is24Hour = DateFormat.is24HourFormat(WeatherWatchFaceService.this);
 
@@ -371,8 +374,20 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             //Day
             String dayString = formatDay(mCalendar.get(Calendar.DAY_OF_WEEK));
-            float dayOffset = x_date_center - mMonthPaint.measureText(monthString) - 10 - mDayPaint.measureText(dayString);
+            float dayOffset = x_date_center - mMonthPaint.measureText(monthString) -  mDayPaint.measureText(dayString);
             canvas.drawText(dayString,dayOffset,mYDateOffset,mDayPaint);
+
+            //Day of month
+            String dayMonthString = String.valueOf(mCalendar.get(Calendar.DAY_OF_MONTH));
+            float dayMonthOffset = x_date_center;
+            canvas.drawText(dayMonthString,dayMonthOffset,mYDateOffset,mDayofMonthPaint);
+
+            //Year
+            String yearString = String.valueOf(mCalendar.get(Calendar.YEAR));
+            float yearOffset = x_date_center + mDayofMonthPaint.measureText(dayMonthString) + 5;
+            canvas.drawText(yearString,yearOffset,mYDateOffset,mYearPaint);
+
+
 
 
 
@@ -439,29 +454,29 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         private String formatMonth(int month){
             switch (month){
                 case 1:
-                    return "JAN";
+                    return "JAN ";
                 case 2:
-                    return "FEB";
+                    return "FEB ";
                 case 3:
-                    return "MAR";
+                    return "MAR ";
                 case 4:
-                    return "APR";
+                    return "APR ";
                 case 5:
                     return "MAY";
                 case 6:
-                    return "JUN";
+                    return "JUN ";
                 case 7:
-                    return "JUL";
+                    return "JUL ";
                 case 8:
-                    return "AUG";
+                    return "AUG ";
                 case 9:
-                    return "SEP";
+                    return "SEP ";
                 case 10:
-                    return "OCT";
+                    return "OCT ";
                 case 11:
-                    return "NOV";
+                    return "NOV ";
                 case 12:
-                    return "DEC";
+                    return "DEC ";
                 default:
                     return "---";
             }
