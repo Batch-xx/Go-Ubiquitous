@@ -60,13 +60,17 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         Paint mAmPmPaint;
         Paint mColonPaint;
         float mColonWidth;
+        Paint mMonthPaint;
+        Paint mDayPaint;
+        Paint mYearPaint;
 
         Calendar mCalendar;
         Date mDate;
         SimpleDateFormat mDayOfWeekFormat;
         java.text.DateFormat mDateFormat;
 
-        float mXOffest, mYOffset;
+        float   mYTimeOffset,
+                mYDateOffset;
 
 
         boolean mShouldDrawColons;
@@ -81,6 +85,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         int mAmbientAmPmColor;
         int mInteractiveColonColor;
         int mAmbientColonColor;
+        int mInteractiveDateColor;
+        int mAmbientDateColor;
         boolean mLowBitAmbient;
 
         final Handler mUpdateTimerHandler = new Handler(){
@@ -135,7 +141,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             Resources resources = WeatherWatchFaceService.this.getResources();
 
-            mYOffset = resources.getDimension(R.dimen.y_offset_round);
+            mYTimeOffset = resources.getDimension(R.dimen.y_time_offset_round);
+            mYDateOffset = resources.getDimension(R.dimen.y_date_offset_round);
+
 
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(resources.getColor(R.color.backgroundColor, null));
@@ -145,6 +153,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mSecondPaint = createTextPaint(resources.getColor(R.color.secondColor,null),NORMAL_TYPEFACE);
             mAmPmPaint = createTextPaint(resources.getColor(R.color.am_pmColor, null), NORMAL_TYPEFACE);
             mColonPaint = createTextPaint(resources.getColor(R.color.colonColor,null), NORMAL_TYPEFACE);
+            mMonthPaint = createTextPaint(resources.getColor(R.color.dateColor,null), NORMAL_TYPEFACE);
 
             mCalendar = Calendar.getInstance();
             mDate = new Date();
@@ -159,6 +168,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mAmbientMinuteColor = resources.getColor(R.color.ambientAmPmColor,null);
             mInteractiveColonColor = resources.getColor(R.color.colonColor,null);
             mAmbientColonColor = resources.getColor(R.color.ambientColonColor,null);
+            mInteractiveDateColor = resources.getColor(R.color.dateColor, null);
+            mAmbientDateColor = resources.getColor(R.color.ambientDateColor,null);
+
 
 
 
@@ -260,6 +272,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             adjustPaintToColorMode(mMinutePaint, mInteractiveMinuteColor, mAmbientMinuteColor);
             adjustPaintToColorMode(mAmPmPaint, mInteractiveAmPmColor, mAmbientAmPmColor);
             adjustPaintToColorMode(mColonPaint, mInteractiveColonColor, mAmbientColonColor);
+            adjustPaintToColorMode(mDatePaint, mInteractiveDateColor, mAmbientDateColor);
 
             if(mLowBitAmbient){
                 boolean antiAlias = !inAmbientMode;
@@ -269,6 +282,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mSecondPaint.setAntiAlias(antiAlias);
                 mAmPmPaint.setAntiAlias(antiAlias);
                 mColonPaint.setAntiAlias(antiAlias);
+                mDatePaint.setAntiAlias(antiAlias);
             }
             invalidate();
             updateTimer();
@@ -282,16 +296,18 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             Resources resources =  WeatherWatchFaceService.this.getResources();
             boolean isRound = insets.isRound();
-            mXOffest = resources.getDimension(isRound ? R.dimen.x_offest_round : R.dimen.x_offest_square);
-            float textSize = resources.getDimension(isRound ? R.dimen.text_size_round : R.dimen.text_size_square);
+//            mXOffest = resources.getDimension(isRound ? R.dimen.x_offest_round : R.dimen.x_offest_square);
+            float timeTextSize = resources.getDimension(isRound ? R.dimen.time_text_size_round : R.dimen.time_text_size_square);
+            float dateTextSize = resources.getDimension(isRound ? R.dimen.date_text_size_round : R.dimen.date_text_size_square);
             float amPmTextSize = resources.getDimension(isRound ? R.dimen.am_pm_text_round : R.dimen.am_pm_text_sqaure);
 
-            mDatePaint.setTextSize(resources.getDimension(R.dimen.date_text_size));
-            mHourPaint.setTextSize(textSize);
-            mMinutePaint.setTextSize(textSize);
-            mSecondPaint.setTextSize(textSize);
-            mAmPmPaint.setTextSize(textSize);
-            mColonPaint.setTextSize(textSize);
+            mDatePaint.setTextSize(resources.getDimension(R.dimen.date_text_size_round));
+            mHourPaint.setTextSize(timeTextSize);
+            mMinutePaint.setTextSize(timeTextSize);
+            mSecondPaint.setTextSize(timeTextSize);
+            mAmPmPaint.setTextSize(timeTextSize);
+            mColonPaint.setTextSize(timeTextSize);
+            mDatePaint.setTextSize(dateTextSize);
 
             mColonWidth = mColonPaint.measureText(COLON_STRING);
         }
@@ -299,8 +315,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
             long now = System.currentTimeMillis();
-            float x_center = bounds.width()/2 - 10;
-            float y_colon_offset  = mYOffset - 8;
+            float x_time_center = bounds.width()/2 - 10;
+            float x_date_center = bounds.width()/2 - 10;
+            float y_colon_offset  = mYTimeOffset - 8;
             boolean is24Hour = DateFormat.is24HourFormat(WeatherWatchFaceService.this);
 
             mCalendar.setTimeInMillis(now);
@@ -322,18 +339,23 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 }
                 hourString = String.valueOf(hour);
             }
-            float hourXOffset  = x_center -  mHourPaint.measureText(hourString);
-            canvas.drawText(hourString,hourXOffset,mYOffset, mHourPaint);
+            float hourXOffset  = x_time_center -  mHourPaint.measureText(hourString);
+            canvas.drawText(hourString,hourXOffset, mYTimeOffset, mHourPaint);
 
             //colon
             if(isInAmbientMode()  || mShouldDrawColons){
-                canvas.drawText(COLON_STRING,x_center,y_colon_offset,mColonPaint);
+                canvas.drawText(COLON_STRING,x_time_center,y_colon_offset,mColonPaint);
             }
 
             //Minutes
             String minuteString = formatTwoDigitNumber(mCalendar.get(Calendar.MINUTE));
-            float minuteXOffset = x_center + mColonPaint.measureText(COLON_STRING);
-            canvas.drawText(minuteString, minuteXOffset, mYOffset,mMinutePaint);
+            float minuteXOffset = x_time_center + mColonPaint.measureText(COLON_STRING);
+            canvas.drawText(minuteString, minuteXOffset, mYTimeOffset,mMinutePaint);
+
+            //Month
+            String monthString = formatMonth(mCalendar.get(Calendar.MONTH));
+            float dateXOffset = x_date_center - mDatePaint.measureText(monthString);
+            canvas.drawText(monthString,dateXOffset,mYDateOffset,mDatePaint);
         }
 
 
@@ -368,6 +390,37 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
         private String formatTwoDigitNumber(int hour) {
             return String.format("%02d", hour);
+        }
+
+        private String formatMonth(int month){
+            switch (month){
+                case 1:
+                    return "JAN";
+                case 2:
+                    return "FEB";
+                case 3:
+                    return "MAR";
+                case 4:
+                    return "APR";
+                case 5:
+                    return "MAY";
+                case 6:
+                    return "JUN";
+                case 7:
+                    return "JUL";
+                case 8:
+                    return "AUG";
+                case 9:
+                    return "SEP";
+                case 10:
+                    return "OCT";
+                case 11:
+                    return "NOV";
+                case 12:
+                    return "DEC";
+                default:
+                    return "---";
+            }
         }
     }
 }
