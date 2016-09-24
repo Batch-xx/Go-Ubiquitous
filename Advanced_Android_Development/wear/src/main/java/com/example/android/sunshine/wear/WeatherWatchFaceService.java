@@ -154,6 +154,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mAmPmPaint = createTextPaint(resources.getColor(R.color.am_pmColor, null), NORMAL_TYPEFACE);
             mColonPaint = createTextPaint(resources.getColor(R.color.colonColor,null), NORMAL_TYPEFACE);
             mMonthPaint = createTextPaint(resources.getColor(R.color.dateColor,null), NORMAL_TYPEFACE);
+            mDayPaint = createTextPaint(resources.getColor(R.color.dateColor,null),NORMAL_TYPEFACE);
+            mYearPaint = createTextPaint(resources.getColor(R.color.dateColor,null),NORMAL_TYPEFACE);
 
             mCalendar = Calendar.getInstance();
             mDate = new Date();
@@ -255,6 +257,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             super.onPropertiesChanged(properties);
             boolean burnInProtection = properties.getBoolean(PROPERTY_BURN_IN_PROTECTION, false);
             mHourPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
+            mMonthPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
+            mDayPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
+            mYearPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
             mLowBitAmbient = properties.getBoolean(PROPERTY_LOW_BIT_AMBIENT, false);
         }
 
@@ -273,6 +278,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             adjustPaintToColorMode(mAmPmPaint, mInteractiveAmPmColor, mAmbientAmPmColor);
             adjustPaintToColorMode(mColonPaint, mInteractiveColonColor, mAmbientColonColor);
             adjustPaintToColorMode(mDatePaint, mInteractiveDateColor, mAmbientDateColor);
+            adjustPaintToColorMode(mMonthPaint, mInteractiveDateColor, mAmbientDateColor);
+            adjustPaintToColorMode(mDayPaint, mInteractiveDateColor, mAmbientDateColor);
+            adjustPaintToColorMode(mMonthPaint, mInteractiveDateColor, mAmbientDateColor);
 
             if(mLowBitAmbient){
                 boolean antiAlias = !inAmbientMode;
@@ -282,7 +290,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mSecondPaint.setAntiAlias(antiAlias);
                 mAmPmPaint.setAntiAlias(antiAlias);
                 mColonPaint.setAntiAlias(antiAlias);
-                mDatePaint.setAntiAlias(antiAlias);
+                mMonthPaint.setAntiAlias(antiAlias);
+                mDayPaint.setAntiAlias(antiAlias);
+                mYearPaint.setAntiAlias(antiAlias);
             }
             invalidate();
             updateTimer();
@@ -307,7 +317,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mSecondPaint.setTextSize(timeTextSize);
             mAmPmPaint.setTextSize(timeTextSize);
             mColonPaint.setTextSize(timeTextSize);
-            mDatePaint.setTextSize(dateTextSize);
+            mMonthPaint.setTextSize(dateTextSize);
+            mDayPaint.setTextSize(dateTextSize);
+            mYearPaint.setTextSize(dateTextSize);
 
             mColonWidth = mColonPaint.measureText(COLON_STRING);
         }
@@ -354,8 +366,20 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             //Month
             String monthString = formatMonth(mCalendar.get(Calendar.MONTH));
-            float dateXOffset = x_date_center - mDatePaint.measureText(monthString);
-            canvas.drawText(monthString,dateXOffset,mYDateOffset,mDatePaint);
+            float dateXOffset = x_date_center - mMonthPaint.measureText(monthString);
+            canvas.drawText(monthString,dateXOffset,mYDateOffset,mMonthPaint);
+
+            //Day
+            String dayString = formatDay(mCalendar.get(Calendar.DAY_OF_WEEK));
+            float dayOffset = x_date_center - mMonthPaint.measureText(monthString) - 10 - mDayPaint.measureText(dayString);
+            canvas.drawText(dayString,dayOffset,mYDateOffset,mDayPaint);
+
+
+
+
+
+
+
         }
 
 
@@ -392,6 +416,26 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             return String.format("%02d", hour);
         }
 
+        private String formatDay(int day){
+            switch (day){
+                case 1:
+                    return "SUN, ";
+                case 2:
+                    return "MON, ";
+                case 3:
+                    return "TUE, ";
+                case 4:
+                    return "WED, ";
+                case 5:
+                    return "THU, ";
+                case 6:
+                    return "FRI, ";
+                case 7:
+                    return "SAT, ";
+                default:
+                    return "---";
+            }
+        }
         private String formatMonth(int month){
             switch (month){
                 case 1:
