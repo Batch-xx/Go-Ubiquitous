@@ -25,7 +25,11 @@ import android.view.WindowInsets;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
+import com.google.android.gms.wearable.DataItem;
+import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.Wearable;
 
 import java.text.SimpleDateFormat;
@@ -187,6 +191,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             initFormats();
         }
+
 
 
         @Override
@@ -405,18 +410,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             float start_x =  bounds.width()/2 - 30;
             float end_x =  bounds.width()/2 + 30;
             canvas.drawLine(start_x, mYSeparateOffset, end_x,mYSeparateOffset,mSeparatePaint);
-
-
-
-
-
-
-
-
-
         }
-
-
 
         private boolean shouldTimerBeRunning(){
             return isVisible() && !mIsAmbientMode;
@@ -424,24 +418,33 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
         @Override
         public void onConnected(@Nullable Bundle bundle) {
-
+           Wearable.DataApi.addListener(mGoogleApiClient,this);
         }
 
         @Override
         public void onConnectionSuspended(int i) {
-
+            Log.e(TAG, "GoogleApiClient connection was SUSPENDED");
         }
 
         @Override
         public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
+            Log.e(TAG, "GoogleApiClient connection FAILED");
         }
 
         @Override
         public void onDataChanged(DataEventBuffer dataEventBuffer) {
+            for(DataEvent event : dataEventBuffer){
+                if(event.getType() == DataEvent.TYPE_CHANGED){
+                    DataItem item  = event.getDataItem();
+                    if(item.getUri().getPath().compareTo("/weather-temp") == 0){
+                        DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
+                        String highString = dataMap.getString("HIGH_TEMP");
+                        String lowString = dataMap.getString("LOW_TEMP");
+                    }
+                }
+            }
 
         }
-
 
 
         private String formatTwoDigitNumber(int hour) {

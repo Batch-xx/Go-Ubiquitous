@@ -27,6 +27,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.ShareActionProvider;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -40,6 +41,14 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.data.WeatherContract.WeatherEntry;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.PutDataMapRequest;
+import com.google.android.gms.wearable.PutDataRequest;
+import com.google.android.gms.wearable.Wearable;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -98,9 +107,11 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
     private TextView mWindLabelView;
     private TextView mPressureView;
     private TextView mPressureLabelView;
+    private String TAG;
 
     public DetailFragment() {
         setHasOptionsMenu(true);
+        TAG = getTag();
     }
 
     @Override
@@ -125,8 +136,15 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
         mWindLabelView = (TextView) rootView.findViewById(R.id.detail_wind_label_textview);
         mPressureView = (TextView) rootView.findViewById(R.id.detail_pressure_textview);
         mPressureLabelView = (TextView) rootView.findViewById(R.id.detail_pressure_label_textview);
+
         return rootView;
     }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+    }
+
 
     private void finishCreatingMenu(Menu menu) {
         // Retrieve the share menu item
