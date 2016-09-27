@@ -69,6 +69,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         Paint mDayofMonthPaint;
         Paint mSeparatePaint;
         Paint mYearPaint;
+        Paint mLowTempPaint;
+        Paint mHighTempPaint;
 
         Calendar mCalendar;
         Date mDate;
@@ -77,7 +79,10 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
         float   mYTimeOffset,
                 mYDateOffset,
-                mYSeparateOffset;
+                mYSeparateOffset,
+                mYTempertureOffsset;
+
+        String mLowString, mHighString;
 
 
         boolean mShouldDrawColons;
@@ -96,6 +101,10 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         int mAmbientDateColor;
         int mInteractiveSeparateColor;
         int mAmbientSeparateColor;
+        int mInteractiveLowTempColor;
+        int mAmbientLowTempColor;
+        int mInteractiveHighTempColor;
+        int mAmbientHighTempColor;
         boolean mLowBitAmbient;
 
         final Handler mUpdateTimerHandler = new Handler(){
@@ -153,6 +162,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mYTimeOffset = resources.getDimension(R.dimen.y_time_offset_round);
             mYDateOffset = resources.getDimension(R.dimen.y_date_offset_round);
             mYSeparateOffset = resources.getDimensionPixelOffset(R.dimen.y_separate_offset);
+            mYTempertureOffsset = resources.getDimensionPixelOffset(R.dimen.y_temp_offset);
+
 
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(resources.getColor(R.color.backgroundColor, null));
@@ -169,6 +180,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             mSeparatePaint = new Paint();
             mSeparatePaint.setColor(resources.getColor(R.color.separateColor, null));
+
+            mLowTempPaint  = createTextPaint(resources.getColor(R.color.dateColor,null),NORMAL_TYPEFACE);
+            mHighTempPaint =  createTextPaint(resources.getColor(R.color.dateColor,null),NORMAL_TYPEFACE);
 
 
             mCalendar = Calendar.getInstance();
@@ -188,6 +202,10 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mAmbientDateColor = resources.getColor(R.color.ambientDateColor,null);
             mInteractiveSeparateColor = resources.getColor(R.color.separateColor,null);
             mAmbientSeparateColor = resources.getColor(R.color.ambientSeparateColor,null);
+            mInteractiveLowTempColor = resources.getColor(R.color.temperatureColor,null);
+            mAmbientLowTempColor = resources.getColor(R.color.ambientTemperatureColor,null);
+            mInteractiveHighTempColor = resources.getColor(R.color.temperatureColor,null);
+            mAmbientHighTempColor = resources.getColor(R.color.ambientTemperatureColor,null);
 
             initFormats();
         }
@@ -275,6 +293,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mDayPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
             mYearPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
             mDayofMonthPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
+            mLowTempPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
+            mHighTempPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
             mLowBitAmbient = properties.getBoolean(PROPERTY_LOW_BIT_AMBIENT, false);
         }
 
@@ -298,6 +318,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             adjustPaintToColorMode(mMonthPaint, mInteractiveDateColor, mAmbientDateColor);
             adjustPaintToColorMode(mDayofMonthPaint,mInteractiveDateColor, mAmbientDateColor);
             adjustPaintToColorMode(mSeparatePaint, mInteractiveSeparateColor, mAmbientSeparateColor);
+            adjustPaintToColorMode(mLowTempPaint, mInteractiveLowTempColor, mAmbientLowTempColor);
+            adjustPaintToColorMode(mHighTempPaint, mInteractiveHighTempColor, mAmbientHighTempColor);
 
             if(mLowBitAmbient){
                 boolean antiAlias = !inAmbientMode;
@@ -312,6 +334,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mYearPaint.setAntiAlias(antiAlias);
                 mDayofMonthPaint.setAntiAlias(antiAlias);
                 mSeparatePaint.setAntiAlias(antiAlias);
+                mLowTempPaint.setAntiAlias(antiAlias);
+                mHighTempPaint.setAntiAlias(antiAlias);
             }
             invalidate();
             updateTimer();
@@ -319,7 +343,18 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
         private void adjustPaintToColorMode(Paint paint, int interactiveColor, int ambientColor){
             paint.setColor(isInAmbientMode() ? ambientColor : interactiveColor);
+
+            mHourPaint.setTypeface(isInAmbientMode() ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
+            mMinutePaint.setTypeface(isInAmbientMode() ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
+            mMonthPaint.setTypeface(isInAmbientMode() ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
+            mDayPaint.setTypeface(isInAmbientMode() ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
+            mYearPaint.setTypeface(isInAmbientMode() ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
+            mDayofMonthPaint.setTypeface(isInAmbientMode() ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
+            mHighTempPaint.setTypeface(isInAmbientMode() ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
+            mLowTempPaint.setTypeface(isInAmbientMode() ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
         }
+
+
 
         @Override
         public void onApplyWindowInsets(WindowInsets insets) {
@@ -410,6 +445,16 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             float start_x =  bounds.width()/2 - 30;
             float end_x =  bounds.width()/2 + 30;
             canvas.drawLine(start_x, mYSeparateOffset, end_x,mYSeparateOffset,mSeparatePaint);
+
+            //low temperature
+            mLowString =  mLowString == null ?  "--" : mLowString;
+            float lowTempOffset = x_date_center -  mLowTempPaint.measureText(mLowString) - 20;
+            canvas.drawText(mLowString, lowTempOffset,mYTempertureOffsset,mLowTempPaint);
+
+            //high temperature
+            mHighString =  mHighString == null ?  "--" : mHighString;
+            float highTempOffset = x_date_center +  mHighTempPaint.measureText(mHighString) + 20;
+            canvas.drawText(mHighString, highTempOffset,mYTempertureOffsset,mHighTempPaint);
         }
 
         private boolean shouldTimerBeRunning(){
@@ -418,28 +463,31 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
         @Override
         public void onConnected(@Nullable Bundle bundle) {
+            Log.d(TAG,"*******Google client is CONNECTED***********");
            Wearable.DataApi.addListener(mGoogleApiClient,this);
         }
 
         @Override
         public void onConnectionSuspended(int i) {
-            Log.e(TAG, "GoogleApiClient connection was SUSPENDED");
+            Log.e(TAG, "**********GoogleApiClient connection was SUSPENDED************");
         }
 
         @Override
         public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-            Log.e(TAG, "GoogleApiClient connection FAILED");
+            Log.e(TAG, "*************GoogleApiClient connection FAILED**************");
         }
 
         @Override
         public void onDataChanged(DataEventBuffer dataEventBuffer) {
+            Log.d(TAG,"*******Data changed was occurred");
+
             for(DataEvent event : dataEventBuffer){
                 if(event.getType() == DataEvent.TYPE_CHANGED){
                     DataItem item  = event.getDataItem();
                     if(item.getUri().getPath().compareTo("/weather-temp") == 0){
                         DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-                        String highString = dataMap.getString("HIGH_TEMP");
-                        String lowString = dataMap.getString("LOW_TEMP");
+                        mHighString = dataMap.getString("HIGH_TEMP");
+                        mLowString = dataMap.getString("LOW_TEMP");
                     }
                 }
             }

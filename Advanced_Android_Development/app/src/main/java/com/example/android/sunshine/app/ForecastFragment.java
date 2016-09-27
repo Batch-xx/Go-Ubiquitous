@@ -358,6 +358,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     }
 
     private void updateWearableTemperature(String highTemp, String lowTemp){
+        Log.d(TAG, "****************updateWearableTemperature ****************");
         if(highTemp == null) highTemp = "--";
         if(lowTemp == null) lowTemp = "--";
 
@@ -379,6 +380,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     }
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        Log.d(TAG, "****************Loader On Finish ****************");
         mForecastAdapter.swapCursor(data);
         updateEmptyView();
         if ( data.getCount() == 0 ) {

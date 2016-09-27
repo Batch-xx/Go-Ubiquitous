@@ -4,6 +4,7 @@
     <dimen name="y_time_offset_round">80dp</dimen>
     <dimen name="y_date_offset_round">120dp</dimen>
     <dimen name="y_separate_offset">140dp</dimen>
+    <dimen name="y_temp_offset">160dp</dimen>
 
     <dimen name="time_text_size_round">50dp</dimen>
     <dimen name="date_text_size_round">20dp</dimen>
