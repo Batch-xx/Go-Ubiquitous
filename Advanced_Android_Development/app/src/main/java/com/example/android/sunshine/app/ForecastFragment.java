@@ -67,7 +67,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     private boolean mHoldForTransition;
     private long mInitialSelectedDate = -1;
     private GoogleApiClient mGoogleClientApi;
-    private String TAG = getTag();
+    private String TAG = "ForecastFragment";
 
 
 
@@ -131,21 +131,21 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
                 .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
                     @Override
                     public void onConnected(Bundle bundle) {
-                        //TODO Add logging message
+                        Log.d(TAG,"Google Client Api is CONNECTED");
                     }
 
                     @Override
                     public void onConnectionSuspended(int i) {
-                        //TODO Add logging message
+                        Log.d(TAG, "Google Client APi is SUSPENDED");
                     }
                 })
                 .addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
                     @Override
                     public void onConnectionFailed(ConnectionResult connectionResult) {
-                        //TODO Add logging message
+                       Log.e(TAG, "Google Client Api FAILED");
                     }
                 })
-                .addApi(Wearable.API)
+                .addApiIfAvailable(Wearable.API)
                 .build();
     }
 
@@ -365,7 +365,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         PutDataMapRequest putDataMapRequest  = PutDataMapRequest.create("/weather-temp");
         putDataMapRequest.getDataMap().putString("HIGH_TEMP",highTemp);
         putDataMapRequest.getDataMap().putString("LOW_TEMP",lowTemp);
-        PutDataRequest putDataRequest = putDataMapRequest.asPutDataRequest();
+        PutDataRequest putDataRequest = putDataMapRequest.asPutDataRequest().setUrgent();
         Wearable.DataApi.putDataItem(mGoogleClientApi,putDataRequest)
                 .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
                     @Override

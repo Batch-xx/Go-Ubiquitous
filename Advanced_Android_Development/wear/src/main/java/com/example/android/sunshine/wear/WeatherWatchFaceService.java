@@ -50,8 +50,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         return new Engine();
     }
 
-    private class Engine extends CanvasWatchFaceService.Engine implements DataApi.DataListener
-            , GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
+    private class Engine extends CanvasWatchFaceService.Engine implements DataApi.DataListener{
         private static final int MSG_UPDATE_TIME = 0;
         static final String COLON_STRING = ":";
         private boolean mIsAmbientMode = false;
@@ -107,6 +106,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         int mAmbientHighTempColor;
         boolean mLowBitAmbient;
 
+        GoogleApiClient  mGoogleClientApi;
+
         final Handler mUpdateTimerHandler = new Handler(){
             @Override
             public void handleMessage(Message msg) {
@@ -127,12 +128,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             }
         };
 
-        GoogleApiClient mGoogleApiClient = new GoogleApiClient.Builder(
-                WeatherWatchFaceService.this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(Wearable.API)
-                .build();
+
 
         final BroadcastReceiver mReceiver = new BroadcastReceiver() {
             @Override
@@ -150,6 +146,27 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 Log.d(TAG, "onCreate");
             }
             super.onCreate(holder);
+
+            mGoogleClientApi = new GoogleApiClient.Builder(WeatherWatchFaceService.this)
+                    .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
+                        @Override
+                        public void onConnected(Bundle bundle) {
+                            Log.d(TAG,"Google Client Api is CONNECTED");
+                        }
+
+                        @Override
+                        public void onConnectionSuspended(int i) {
+                            Log.d(TAG, "Google Client APi is SUSPENDED");
+                        }
+                    })
+                    .addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
+                        @Override
+                        public void onConnectionFailed(ConnectionResult connectionResult) {
+                            Log.e(TAG, "Google Client Api FAILED");
+                        }
+                    })
+                    .addApiIfAvailable(Wearable.API)
+                    .build();
 
             setWatchFaceStyle(new WatchFaceStyle.Builder(WeatherWatchFaceService.this)
             .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
@@ -234,7 +251,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             super.onVisibilityChanged(visible);
 
             if(visible) {
-                mGoogleApiClient.connect();
+                mGoogleClientApi.connect();
                 registerReciever();
 
                 mCalendar.setTimeZone(TimeZone.getDefault());
@@ -242,9 +259,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             }else{
                 unregisterReciever();
 
-                if(mGoogleApiClient != null && mGoogleApiClient.isConnected()){
-                    Wearable.DataApi.removeListener(mGoogleApiClient,this);
-                    mGoogleApiClient.disconnect();
+                if(mGoogleClientApi != null && mGoogleClientApi.isConnected()){
+                    Wearable.DataApi.removeListener(mGoogleClientApi,this);
+                    mGoogleClientApi.disconnect();
                 }
             }
             updateTimer();
@@ -461,21 +478,21 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             return isVisible() && !mIsAmbientMode;
         }
 
-        @Override
-        public void onConnected(@Nullable Bundle bundle) {
-            Log.d(TAG,"*******Google client is CONNECTED***********");
-           Wearable.DataApi.addListener(mGoogleApiClient,this);
-        }
+//        @Override
+//        public void onConnected(@Nullable Bundle bundle) {
+//            Log.d(TAG,"*******Google client is CONNECTED***********");
+//           Wearable.DataApi.addListener(mGoogleApiClient,this);
+//        }
+//
+//        @Override
+//        public void onConnectionSuspended(int i) {
+//            Log.e(TAG, "**********GoogleApiClient connection was SUSPENDED************");
+//        }
 
-        @Override
-        public void onConnectionSuspended(int i) {
-            Log.e(TAG, "**********GoogleApiClient connection was SUSPENDED************");
-        }
-
-        @Override
-        public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-            Log.e(TAG, "*************GoogleApiClient connection FAILED**************");
-        }
+//        @Override
+//        public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+//            Log.e(TAG, "*************GoogleApiClient connection FAILED**************");
+//        }
 
         @Override
         public void onDataChanged(DataEventBuffer dataEventBuffer) {
