@@ -34,7 +34,6 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
-
 import com.google.android.gms.location.places.ui.PlacePicker;
 
 public class LocationEditTextPreference extends EditTextPreference {
@@ -85,7 +84,7 @@ public class LocationEditTextPreference extends EditTextPreference {
                 Activity settingsActivity = (SettingsActivity) context;
                 try {
                     settingsActivity.startActivityForResult(
-                            builder.build(((SettingsActivity) context)), SettingsActivity.PLACE_PICKER_REQUEST);
+                            builder.build((SettingsActivity)context), SettingsActivity.PLACE_PICKER_REQUEST);
 
                 } catch (GooglePlayServicesNotAvailableException
                         | GooglePlayServicesRepairableException e) {

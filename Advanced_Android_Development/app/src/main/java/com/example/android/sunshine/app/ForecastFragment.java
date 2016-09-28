@@ -47,13 +47,6 @@ import android.widget.TextView;
 
 import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.wearable.DataApi;
-import com.google.android.gms.wearable.PutDataMapRequest;
-import com.google.android.gms.wearable.PutDataRequest;
-import com.google.android.gms.wearable.Wearable;
 
 /**
  * Encapsulates fetching the forecast and displaying it as a {@link android.support.v7.widget.RecyclerView} layout.
@@ -66,10 +59,6 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     private int mChoiceMode;
     private boolean mHoldForTransition;
     private long mInitialSelectedDate = -1;
-    private GoogleApiClient mGoogleClientApi;
-    private String TAG = "ForecastFragment";
-
-
 
     private static final String SELECTED_KEY = "selected_position";
 
@@ -126,34 +115,12 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         super.onCreate(savedInstanceState);
         // Add this line in order for this fragment to handle menu events.
         setHasOptionsMenu(true);
-
-        mGoogleClientApi = new GoogleApiClient.Builder(getActivity())
-                .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
-                    @Override
-                    public void onConnected(Bundle bundle) {
-                        Log.d(TAG,"Google Client Api is CONNECTED");
-                    }
-
-                    @Override
-                    public void onConnectionSuspended(int i) {
-                        Log.d(TAG, "Google Client APi is SUSPENDED");
-                    }
-                })
-                .addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
-                    @Override
-                    public void onConnectionFailed(ConnectionResult connectionResult) {
-                       Log.e(TAG, "Google Client Api FAILED");
-                    }
-                })
-                .addApiIfAvailable(Wearable.API)
-                .build();
     }
 
     @Override
     public void onResume() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
         sp.registerOnSharedPreferenceChangeListener(this);
-        mGoogleClientApi.connect();
         super.onResume();
     }
 
@@ -357,46 +324,13 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
                 sortOrder);
     }
 
-    private void updateWearableTemperature(String highTemp, String lowTemp){
-        Log.d(TAG, "****************updateWearableTemperature ****************");
-        if(highTemp == null) highTemp = "--";
-        if(lowTemp == null) lowTemp = "--";
-
-        PutDataMapRequest putDataMapRequest  = PutDataMapRequest.create("/weather-temp");
-        putDataMapRequest.getDataMap().putString("HIGH_TEMP",highTemp);
-        putDataMapRequest.getDataMap().putString("LOW_TEMP",lowTemp);
-        PutDataRequest putDataRequest = putDataMapRequest.asPutDataRequest().setUrgent();
-        Wearable.DataApi.putDataItem(mGoogleClientApi,putDataRequest)
-                .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
-                    @Override
-                    public void onResult(DataApi.DataItemResult dataItemResult) {
-                        if(dataItemResult.getStatus().isSuccess()){
-                            Log.d(TAG,"successfully sent temperature");
-                        }else{
-                            Log.e(TAG,"Failed to sent temperature");
-                        }
-                    }
-                });
-    }
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        Log.d(TAG, "****************Loader On Finish ****************");
         mForecastAdapter.swapCursor(data);
         updateEmptyView();
         if ( data.getCount() == 0 ) {
             getActivity().supportStartPostponedEnterTransition();
         } else {
-            if (data != null && data.moveToFirst()) {
-                double low = data.getDouble(COL_WEATHER_MIN_TEMP);
-                String lowString = Utility.formatTemperature(getActivity(), low);
-
-                double high = data.getDouble(COL_WEATHER_MAX_TEMP);
-                String highString = Utility.formatTemperature(getActivity(), high);
-
-                updateWearableTemperature(highString, lowString);
-            }
-
-
             mRecyclerView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
                 @Override
                 public boolean onPreDraw() {
