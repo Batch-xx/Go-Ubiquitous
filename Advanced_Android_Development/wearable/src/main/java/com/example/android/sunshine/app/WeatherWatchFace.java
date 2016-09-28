@@ -16,7 +16,10 @@
 
 package com.example.android.sunshine.app;
 
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -31,6 +34,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 import android.widget.Toast;
@@ -58,6 +62,10 @@ public class WeatherWatchFace extends CanvasWatchFaceService {
      * Handler message id for updating the time periodically in interactive mode.
      */
     private static final int MSG_UPDATE_TIME = 0;
+
+    private final int SYNC_JOB_ID = 1;
+
+    private String TAG = "WeatherWatchFace";
 
     @Override
     public Engine onCreateEngine() {
@@ -127,6 +135,21 @@ public class WeatherWatchFace extends CanvasWatchFaceService {
             mTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
 
             mCalendar = Calendar.getInstance();
+
+            // Job Temp Sync Scheduler
+            ComponentName jobSvcName = new ComponentName(WeatherWatchFace.this,SyncJobService.class);
+            JobInfo syncTempJob = new JobInfo.Builder(SYNC_JOB_ID,jobSvcName)
+                    .setPeriodic((long)resources.getInteger(R.integer.syncTimeInterval))
+                    .setRequiresDeviceIdle(true)
+                    .build();
+            JobScheduler jobScheduler = (JobScheduler) getApplication()
+                    .getSystemService(Context.JOB_SCHEDULER_SERVICE);
+            int result  = jobScheduler.schedule(syncTempJob);
+            if(result == JobScheduler.RESULT_SUCCESS){
+                Log.d(TAG, "jobSvcName was scheduled SUCCESS" );
+            }else{
+                Log.d(TAG, "jobSvcName was scheduled FAILED" );
+            }
         }
 
         @Override
