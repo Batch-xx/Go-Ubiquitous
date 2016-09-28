@@ -32,12 +32,18 @@ import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 import android.widget.Toast;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.Wearable;
 
 import java.lang.ref.WeakReference;
 import java.util.Calendar;
@@ -63,9 +69,16 @@ public class WeatherWatchFace extends CanvasWatchFaceService {
      */
     private static final int MSG_UPDATE_TIME = 0;
 
-    private final int SYNC_JOB_ID = 1;
 
     private String TAG = "WeatherWatchFace";
+
+    private GoogleApiClient mGoogleClientAPI;
+
+    @Override
+    public void onCreate() {
+
+        super.onCreate();
+    }
 
     @Override
     public Engine onCreateEngine() {
@@ -138,7 +151,7 @@ public class WeatherWatchFace extends CanvasWatchFaceService {
 
             // Job Temp Sync Scheduler
             ComponentName jobSvcName = new ComponentName(WeatherWatchFace.this,SyncJobService.class);
-            JobInfo syncTempJob = new JobInfo.Builder(SYNC_JOB_ID,jobSvcName)
+            JobInfo syncTempJob = new JobInfo.Builder(SyncJobService.SYNC_TEMP_ID,jobSvcName)
                     .setPeriodic((long)resources.getInteger(R.integer.syncTimeInterval))
                     .setRequiresDeviceIdle(true)
                     .build();
