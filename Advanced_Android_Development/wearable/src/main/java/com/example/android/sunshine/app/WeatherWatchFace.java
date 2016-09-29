@@ -72,8 +72,6 @@ public class WeatherWatchFace extends CanvasWatchFaceService {
 
     private String TAG = "WeatherWatchFace";
 
-    private GoogleApiClient mGoogleClientAPI;
-
     @Override
     public void onCreate() {
 
@@ -148,21 +146,6 @@ public class WeatherWatchFace extends CanvasWatchFaceService {
             mTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
 
             mCalendar = Calendar.getInstance();
-
-            // Job Temp Sync Scheduler
-            ComponentName jobSvcName = new ComponentName(WeatherWatchFace.this,SyncJobService.class);
-            JobInfo syncTempJob = new JobInfo.Builder(SyncJobService.SYNC_TEMP_ID,jobSvcName)
-                    .setPeriodic((long)resources.getInteger(R.integer.syncTimeInterval))
-                    .setRequiresDeviceIdle(true)
-                    .build();
-            JobScheduler jobScheduler = (JobScheduler) getApplication()
-                    .getSystemService(Context.JOB_SCHEDULER_SERVICE);
-            int result  = jobScheduler.schedule(syncTempJob);
-            if(result == JobScheduler.RESULT_SUCCESS){
-                Log.d(TAG, "jobSvcName was scheduled SUCCESS" );
-            }else{
-                Log.d(TAG, "jobSvcName was scheduled FAILED" );
-            }
         }
 
         @Override
