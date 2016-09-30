@@ -86,5 +86,4 @@ public class WeatherJobService extends JobService {
     private void updateTemperatureJob(){
         
     }
-
 }

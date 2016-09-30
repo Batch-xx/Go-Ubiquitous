@@ -20,6 +20,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -43,7 +44,12 @@ import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.CapabilityApi;
+import com.google.android.gms.wearable.CapabilityInfo;
+import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.Wearable;
+
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity implements ForecastFragment.Callback,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
@@ -55,6 +61,7 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
     private static final String SYNC_TEMP_REQUEST_PATH = "/sync_temp_request";
+    private static final String TEMPERATURE_REQUEST_CAPABILITY_NAME = "temperature_request";
 
     private boolean mTwoPane;
     private String mLocation;
@@ -73,7 +80,7 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
                 case MSG_SERVICE_OBJ:
                     mWeatherJobService = (WeatherJobService) msg.obj;
                     mWeatherJobService.setUiCallback(MainActivity.this);
-                    scheduleTemperatureUpdateJob();
+                    new SetupTemperatureUpdate().execute();
                     break;
                 default:
                     Log.e(TAG, "Invalid case");
@@ -176,6 +183,22 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
         super.onStop();
     }
 
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        Log.d(TAG, "Google Client API CONNECTED");
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        Log.d(TAG, "Google Client API SUSPENDED");
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        Log.e(TAG, "Google Client API FAILED");
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -266,24 +289,29 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
         return true;
     }
 
-    @Override
-    public void onConnected(@Nullable Bundle bundle) {
-        Log.d(TAG, "Google Client API CONNECTED");
+    private void updateTemperatureUpdateCapable(CapabilityApi.GetCapabilityResult result){
+        CapabilityInfo info = result.getCapability();
+        Set<Node> nodes = info.getNodes();
+
+        if(nodes.isEmpty()){
+
+        }
     }
 
-    @Override
-    public void onConnectionSuspended(int i) {
-        Log.d(TAG, "Google Client API SUSPENDED");
-    }
+    private class SetupTemperatureUpdate extends AsyncTask<Void,Void, CapabilityApi.GetCapabilityResult>{
+        @Override
+        protected CapabilityApi.GetCapabilityResult doInBackground(Void... voids) {
+            CapabilityApi.GetCapabilityResult result =
+                    Wearable.CapabilityApi.getCapability(
+                            mGoogleApiClient, TEMPERATURE_REQUEST_CAPABILITY_NAME,
+                            CapabilityApi.FILTER_REACHABLE).await();
 
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        Log.e(TAG, "Google Client API FAILED");
-    }
+            return result;
+        }
 
-    private void scheduleTemperatureUpdateJob(){
-        JobInfo.Builder builder = new JobInfo.Builder(WeatherJobService.UPDATE_TEMP_JOB_ID, mServiceComponent)
-                .setPeriodic(60000);
-        mWeatherJobService.scheduleJob(builder.build());
+        @Override
+        protected void onPostExecute(CapabilityApi.GetCapabilityResult getCapabilityResult) {
+            updateTemperatureUpdateCapable(getCapabilityResult);
+        }
     }
 }
