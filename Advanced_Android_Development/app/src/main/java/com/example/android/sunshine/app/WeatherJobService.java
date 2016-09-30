@@ -16,7 +16,8 @@ import android.util.Log;
 
 public class WeatherJobService extends JobService {
 
-    public static final int MSG_SERVICE_OBJ = 0;
+
+    public static final int UPDATE_TEMP_JOB_ID = 1;
 
     private final String TAG = "WeatherJobSvc";
     private Activity mMainActivity;
@@ -40,7 +41,7 @@ public class WeatherJobService extends JobService {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Messenger callback  = intent.getParcelableExtra("messenger");
         Message msg = Message.obtain();
-        msg.what = MSG_SERVICE_OBJ;
+        msg.what = MainActivity.MSG_SERVICE_OBJ;
         msg.obj = this;
 
         try {
@@ -56,7 +57,8 @@ public class WeatherJobService extends JobService {
         Log.d(TAG, "Job STARTED: " + jobParameters.getJobId());
         int job_id = jobParameters.getJobId();
         switch(job_id){
-            case MSG_SERVICE_OBJ:
+            case UPDATE_TEMP_JOB_ID:
+                updateTemperatureJob();
                 break;
             default:
                 Log.e(TAG, "Invalid job ID");
@@ -78,6 +80,11 @@ public class WeatherJobService extends JobService {
         Log.d(TAG,"Scheduling Job: " + job_info.getId());
         JobScheduler tm = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
         tm.schedule(job_info);
+    }
+
+    //Jobs //
+    private void updateTemperatureJob(){
+        
     }
 
 }

@@ -48,7 +48,7 @@ import com.google.android.gms.wearable.Wearable;
 public class MainActivity extends AppCompatActivity implements ForecastFragment.Callback,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
-    public static int UPDATE_TEMP_JOB_ID = 1;
+    public static final int MSG_SERVICE_OBJ = 0;
 
     private final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final String DETAILFRAGMENT_TAG = "DFTAG";
@@ -70,7 +70,7 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case WeatherJobService.MSG_SERVICE_OBJ:
+                case MSG_SERVICE_OBJ:
                     mWeatherJobService = (WeatherJobService) msg.obj;
                     mWeatherJobService.setUiCallback(MainActivity.this);
                     scheduleTemperatureUpdateJob();
@@ -158,8 +158,6 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
         startService(startJobServiceIntent);
 
         mServiceComponent = new ComponentName(this,WeatherJobService.class);
-
-
     }
 
 
@@ -284,7 +282,7 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
     }
 
     private void scheduleTemperatureUpdateJob(){
-        JobInfo.Builder builder = new JobInfo.Builder(UPDATE_TEMP_JOB_ID, mServiceComponent)
+        JobInfo.Builder builder = new JobInfo.Builder(WeatherJobService.UPDATE_TEMP_JOB_ID, mServiceComponent)
                 .setPeriodic(60000);
         mWeatherJobService.scheduleJob(builder.build());
     }
