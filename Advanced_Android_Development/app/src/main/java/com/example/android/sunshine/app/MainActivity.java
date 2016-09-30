@@ -44,8 +44,11 @@ import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.CapabilityApi;
 import com.google.android.gms.wearable.CapabilityInfo;
+import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.Wearable;
 
@@ -60,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
     private static final String DETAILFRAGMENT_TAG = "DFTAG";
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
-    private static final String SYNC_TEMP_REQUEST_PATH = "/sync_temp_request";
+    private static final String UPDATE_TEMP_REQUEST_PATH = "/update_temp";
     private static final String TEMPERATURE_REQUEST_CAPABILITY_NAME = "temperature_request";
 
     private boolean mTwoPane;
@@ -68,6 +71,7 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
 
     private WeatherJobService mWeatherJobService;
     private ComponentName mServiceComponent;
+    private String temperatureUpdateId = null;
 
     private GoogleApiClient mGoogleApiClient;
 
@@ -80,7 +84,8 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
                 case MSG_SERVICE_OBJ:
                     mWeatherJobService = (WeatherJobService) msg.obj;
                     mWeatherJobService.setUiCallback(MainActivity.this);
-                    new SetupTemperatureUpdate().execute();
+                    setupWearableConnectionListener();
+                    SetupTemperatureUpdate();
                     break;
                 default:
                     Log.e(TAG, "Invalid case");
@@ -164,14 +169,19 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
         startJobServiceIntent.putExtra("messenger", new Messenger(mHandler));
         startService(startJobServiceIntent);
 
-        mServiceComponent = new ComponentName(this,WeatherJobService.class);
+        mServiceComponent = new ComponentName(this, WeatherJobService.class);
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
 
     @Override
     protected void onStart() {
         super.onStart();
         mGoogleApiClient.connect();
+        Log.d(TAG, "Google Client API CONNECTED");
     }
 
     @Override
@@ -289,29 +299,67 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
         return true;
     }
 
-    private void updateTemperatureUpdateCapable(CapabilityApi.GetCapabilityResult result){
+    private void updateTemperatureUpdateCapable(CapabilityApi.GetCapabilityResult result) {
         CapabilityInfo info = result.getCapability();
         Set<Node> nodes = info.getNodes();
 
-        if(nodes.isEmpty()){
-
+        for(Node node : nodes) {
+            if(node.isNearby()) {
+                temperatureUpdateId = node.getId();
+                if (mWeatherJobService != null) {
+                    JobInfo.Builder builder = new JobInfo.Builder(WeatherJobService.UPDATE_TEMP_JOB_ID, mServiceComponent)
+                            .setPeriodic(10000);
+                    JobInfo jobInfo = builder.build();
+                    mWeatherJobService.scheduleJob(jobInfo);
+                }
+            }
         }
     }
 
-    private class SetupTemperatureUpdate extends AsyncTask<Void,Void, CapabilityApi.GetCapabilityResult>{
-        @Override
-        protected CapabilityApi.GetCapabilityResult doInBackground(Void... voids) {
-            CapabilityApi.GetCapabilityResult result =
-                    Wearable.CapabilityApi.getCapability(
-                            mGoogleApiClient, TEMPERATURE_REQUEST_CAPABILITY_NAME,
-                            CapabilityApi.FILTER_REACHABLE).await();
-
-            return result;
+    public void updateTemperatureJob(){
+        if(temperatureUpdateId !=  null){
+            DataMap config = new DataMap();
+            config.putInt("TEMP", 73);
+            byte[] rawData = config.toByteArray();
+            Wearable.MessageApi.sendMessage(mGoogleApiClient, temperatureUpdateId,
+                    UPDATE_TEMP_REQUEST_PATH,rawData).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                @Override
+                public void onResult(@NonNull MessageApi.SendMessageResult sendMessageResult) {
+                    if(!sendMessageResult.getStatus().isSuccess()){
+                        Log.e(TAG, "Updating temperature FAILED.");
+                    }
+                }
+            });
         }
+    }
 
-        @Override
-        protected void onPostExecute(CapabilityApi.GetCapabilityResult getCapabilityResult) {
-            updateTemperatureUpdateCapable(getCapabilityResult);
-        }
+    private void setupWearableConnectionListener(){
+        CapabilityApi.CapabilityListener capabilityListener =
+                new CapabilityApi.CapabilityListener() {
+                    @Override
+                    public void onCapabilityChanged(CapabilityInfo capabilityInfo) {
+                        SetupTemperatureUpdate();
+                    }
+                };
+        Wearable.CapabilityApi.addCapabilityListener(
+                mGoogleApiClient,
+                capabilityListener,
+                TEMPERATURE_REQUEST_CAPABILITY_NAME
+        );
+    }
+
+
+    private void  SetupTemperatureUpdate(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                CapabilityApi.GetCapabilityResult result =
+                        Wearable.CapabilityApi.getCapability(
+                                mGoogleApiClient, TEMPERATURE_REQUEST_CAPABILITY_NAME,
+                                CapabilityApi.FILTER_REACHABLE).await();
+
+                updateTemperatureUpdateCapable(result);
+            }
+        }).start();
     }
 }

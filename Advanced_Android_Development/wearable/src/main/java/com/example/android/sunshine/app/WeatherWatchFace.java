@@ -43,6 +43,8 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.MessageApi;
+import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Wearable;
 
 import java.lang.ref.WeakReference;
@@ -54,7 +56,7 @@ import java.util.concurrent.TimeUnit;
  * Digital watch face with seconds. In ambient mode, the seconds aren't displayed. On devices with
  * low-bit ambient mode, the text is drawn without anti-aliasing in ambient mode.
  */
-public class WeatherWatchFace extends CanvasWatchFaceService {
+public class WeatherWatchFace extends CanvasWatchFaceService implements MessageApi.MessageListener {
     private static final Typeface NORMAL_TYPEFACE =
             Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
 
@@ -81,6 +83,11 @@ public class WeatherWatchFace extends CanvasWatchFaceService {
     @Override
     public Engine onCreateEngine() {
         return new Engine();
+    }
+
+    @Override
+    public void onMessageReceived(MessageEvent messageEvent) {
+
     }
 
     private static class EngineHandler extends Handler {

@@ -1,9 +1,6 @@
 package com.example.android.sunshine.app;
 
-import android.app.Service;
-import android.content.Intent;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -19,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 public class WeatherWatchFaceListenerService extends WearableListenerService
         implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
 
-    private final String TEMP_UPDATE_PATH = "/temp_update_path";
+    private final String UPDATE_TEMP_REQUEST_PATH = "/update_temp";
     private String TAG = "WatchFaceListenerSvc";
     private GoogleApiClient mGoogleApiClient;
 
@@ -29,7 +26,9 @@ public class WeatherWatchFaceListenerService extends WearableListenerService
 
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
-        if (!messageEvent.getPath().equals(TEMP_UPDATE_PATH)) {
+        Log.d(TAG, "Event has reached onMessageReceived");
+
+        if (!messageEvent.getPath().equals(UPDATE_TEMP_REQUEST_PATH)) {
             return;
         }
 

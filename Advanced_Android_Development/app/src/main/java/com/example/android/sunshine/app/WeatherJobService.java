@@ -20,16 +20,17 @@ public class WeatherJobService extends JobService {
     public static final int UPDATE_TEMP_JOB_ID = 1;
 
     private final String TAG = "WeatherJobSvc";
-    private Activity mMainActivity;
+    private MainActivity mMainActivity;
 
     public WeatherJobService() {
     }
 
     @Override
     public void onCreate() {
-        Log.d(TAG, "WeatherJobService STARTED");
+        Log.d(TAG, "WeatherJobService CREATED");
         super.onCreate();
     }
+
 
     @Override
     public void onDestroy() {
@@ -74,6 +75,7 @@ public class WeatherJobService extends JobService {
 
     public void setUiCallback(MainActivity activity){
         mMainActivity = activity;
+
     }
 
     public void scheduleJob(JobInfo job_info){
@@ -84,6 +86,9 @@ public class WeatherJobService extends JobService {
 
     //Jobs //
     private void updateTemperatureJob(){
-        
+        Log.d(TAG, "Updating temperature");
+        if(mMainActivity != null) {
+            mMainActivity.updateTemperatureJob();
+        }
     }
 }
