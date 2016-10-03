@@ -43,6 +43,7 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Wearable;
@@ -56,9 +57,14 @@ import java.util.concurrent.TimeUnit;
  * Digital watch face with seconds. In ambient mode, the seconds aren't displayed. On devices with
  * low-bit ambient mode, the text is drawn without anti-aliasing in ambient mode.
  */
-public class WeatherWatchFace extends CanvasWatchFaceService implements MessageApi.MessageListener {
+public class WeatherWatchFace extends CanvasWatchFaceService implements MessageApi.MessageListener,
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
     private static final Typeface NORMAL_TYPEFACE =
             Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
+    private final String UPDATE_TEMP_REQUEST_PATH = "/update_temp";
+    private GoogleApiClient mGoogleApiClient;
+    private Engine mEngine;
+    private String mTestText = "--";
 
     /**
      * Update rate in milliseconds for interactive mode. We update once a second since seconds are
@@ -76,17 +82,51 @@ public class WeatherWatchFace extends CanvasWatchFaceService implements MessageA
 
     @Override
     public void onCreate() {
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(Wearable.API)
+                .build();
 
         super.onCreate();
     }
 
     @Override
     public Engine onCreateEngine() {
-        return new Engine();
+        mEngine = new Engine();
+        return mEngine;
     }
 
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
+        Log.d(TAG, "Event has reached onMessageReceived");
+
+        if (!messageEvent.getPath().equals(UPDATE_TEMP_REQUEST_PATH)) {
+            return;
+        }
+
+        byte[] rawData =  messageEvent.getData();
+        DataMap map = DataMap.fromByteArray(rawData);
+        mTestText = map.get("TEMP");
+
+        if(mTestText != null) {
+            mEngine.updateTemperature();
+        }
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        Wearable.MessageApi.addListener(mGoogleApiClient,this);
+        Log.d(TAG, "Google API Client CONNECTED");
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
 
     }
 
@@ -188,6 +228,9 @@ public class WeatherWatchFace extends CanvasWatchFaceService implements MessageA
             updateTimer();
         }
 
+        public void updateTemperature(){
+            invalidate();
+        }
         private void registerReceiver() {
             if (mRegisteredTimeZoneReceiver) {
                 return;
@@ -284,11 +327,13 @@ public class WeatherWatchFace extends CanvasWatchFaceService implements MessageA
             long now = System.currentTimeMillis();
             mCalendar.setTimeInMillis(now);
 
-            String text = mAmbient
-                    ? String.format("%d:%02d", mCalendar.get(Calendar.HOUR),
-                    mCalendar.get(Calendar.MINUTE))
-                    : String.format("%d:%02d:%02d", mCalendar.get(Calendar.HOUR),
-                    mCalendar.get(Calendar.MINUTE), mCalendar.get(Calendar.SECOND));
+//            String text = mAmbient
+//                    ? String.format("%d:%02d", mCalendar.get(Calendar.HOUR),
+//                    mCalendar.get(Calendar.MINUTE))
+//                    : String.format("%d:%02d:%02d", mCalendar.get(Calendar.HOUR),
+//                    mCalendar.get(Calendar.MINUTE), mCalendar.get(Calendar.SECOND));
+
+            String text = mTestText;
             canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
         }
 

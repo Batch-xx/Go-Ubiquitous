@@ -50,6 +50,7 @@ import com.google.android.gms.wearable.CapabilityInfo;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
 import java.util.Set;
@@ -84,8 +85,9 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
                 case MSG_SERVICE_OBJ:
                     mWeatherJobService = (WeatherJobService) msg.obj;
                     mWeatherJobService.setUiCallback(MainActivity.this);
-                    setupWearableConnectionListener();
-                    SetupTemperatureUpdate();
+                    startTemperatureUpdateJob();
+//                    setupWearableConnectionListener();
+//                    SetupTemperatureUpdate();
                     break;
                 default:
                     Log.e(TAG, "Invalid case");
@@ -168,8 +170,6 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
         Intent startJobServiceIntent = new Intent(this, WeatherJobService.class);
         startJobServiceIntent.putExtra("messenger", new Messenger(mHandler));
         startService(startJobServiceIntent);
-
-        mServiceComponent = new ComponentName(this, WeatherJobService.class);
     }
 
     @Override
@@ -197,6 +197,13 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         Log.d(TAG, "Google Client API CONNECTED");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mGoogleApiClient.disconnect();
+        Log.d(TAG, "Google Client API DISCONNECTED");
     }
 
     @Override
@@ -299,66 +306,43 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
         return true;
     }
 
-    private void updateTemperatureUpdateCapable(CapabilityApi.GetCapabilityResult result) {
-        CapabilityInfo info = result.getCapability();
-        Set<Node> nodes = info.getNodes();
+    private void startTemperatureUpdateJob() {
+        if(mServiceComponent == null) {
+            mServiceComponent = new ComponentName(this, WeatherJobService.class);
+        }
 
-        for(Node node : nodes) {
-            if(node.isNearby()) {
-                temperatureUpdateId = node.getId();
-                if (mWeatherJobService != null) {
-                    JobInfo.Builder builder = new JobInfo.Builder(WeatherJobService.UPDATE_TEMP_JOB_ID, mServiceComponent)
-                            .setPeriodic(10000);
-                    JobInfo jobInfo = builder.build();
-                    mWeatherJobService.scheduleJob(jobInfo);
-                }
-            }
+        if (mWeatherJobService != null) {
+            JobInfo.Builder builder = new JobInfo.Builder(WeatherJobService.UPDATE_TEMP_JOB_ID, mServiceComponent)
+                    .setPeriodic(10000);
+            JobInfo jobInfo = builder.build();
+            mWeatherJobService.scheduleJob(jobInfo);
         }
     }
 
-    public void updateTemperatureJob(){
-        if(temperatureUpdateId !=  null){
-            DataMap config = new DataMap();
-            config.putInt("TEMP", 73);
-            byte[] rawData = config.toByteArray();
-            Wearable.MessageApi.sendMessage(mGoogleApiClient, temperatureUpdateId,
-                    UPDATE_TEMP_REQUEST_PATH,rawData).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
-                @Override
-                public void onResult(@NonNull MessageApi.SendMessageResult sendMessageResult) {
-                    if(!sendMessageResult.getStatus().isSuccess()){
-                        Log.e(TAG, "Updating temperature FAILED.");
-                    }
-                }
-            });
-        }
+    public void updateTemperatureJob() {
+        sendMessage(UPDATE_TEMP_REQUEST_PATH, "73", "TEMP");
     }
 
-    private void setupWearableConnectionListener(){
-        CapabilityApi.CapabilityListener capabilityListener =
-                new CapabilityApi.CapabilityListener() {
-                    @Override
-                    public void onCapabilityChanged(CapabilityInfo capabilityInfo) {
-                        SetupTemperatureUpdate();
-                    }
-                };
-        Wearable.CapabilityApi.addCapabilityListener(
-                mGoogleApiClient,
-                capabilityListener,
-                TEMPERATURE_REQUEST_CAPABILITY_NAME
-        );
-    }
-
-
-    private void  SetupTemperatureUpdate(){
+    private void sendMessage(final String path, final String payload, final String label) {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                CapabilityApi.GetCapabilityResult result =
-                        Wearable.CapabilityApi.getCapability(
-                                mGoogleApiClient, TEMPERATURE_REQUEST_CAPABILITY_NAME,
-                                CapabilityApi.FILTER_REACHABLE).await();
-
-                updateTemperatureUpdateCapable(result);
+                DataMap config = new DataMap();
+                config.putString(label, payload);
+                byte[] rawData = config.toByteArray();
+                NodeApi.GetConnectedNodesResult nodes =
+                        Wearable.NodeApi.getConnectedNodes(mGoogleApiClient).await();
+                for (Node node : nodes.getNodes()) {
+                    Wearable.MessageApi.sendMessage(mGoogleApiClient, node.getId(),
+                            path, rawData).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                        @Override
+                        public void onResult(@NonNull MessageApi.SendMessageResult sendMessageResult) {
+                            if (!sendMessageResult.getStatus().isSuccess()) {
+                                Log.e(TAG, "Send message FAILED: " + path);
+                            }
+                        }
+                    });
+                }
             }
         }).start();
     }
