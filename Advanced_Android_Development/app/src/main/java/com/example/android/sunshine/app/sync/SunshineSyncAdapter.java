@@ -34,6 +34,7 @@ import com.example.android.sunshine.app.BuildConfig;
 import com.example.android.sunshine.app.MainActivity;
 import com.example.android.sunshine.app.R;
 import com.example.android.sunshine.app.Utility;
+import com.example.android.sunshine.app.WearWeatherUpdater;
 import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.muzei.WeatherMuzeiSource;
 
@@ -370,11 +371,9 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
                 updateWidgets();
                 updateMuzei();
                 notifyWeather();
+                updateWearWeather();
 
                 // Updates wearable weather service
-                WearWeatherService weatherSvc = (WearWeatherService) context
-                        .getSystemService(WearWeatherService.class);
-                weatherSvc.updateWearable();
             }
 
             Log.d(LOG_TAG, "Sync Complete. " + cVVector.size() + " Inserted");
@@ -385,6 +384,10 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
             e.printStackTrace();
             setLocationStatus(getContext(), LOCATION_STATUS_SERVER_INVALID);
         }
+    }
+    private void updateWearWeather(){
+        WearWeatherUpdater wearWeatherUpdater = new WearWeatherUpdater(getContext());
+        wearWeatherUpdater.updateWearable();
     }
 
 

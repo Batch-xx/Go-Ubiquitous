@@ -34,10 +34,11 @@ public class WearWeatherUpdater implements
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .build();
+
     }
 
-
     public  void updateWearable() {
+        mGoogleApiClient.blockingConnect();
         final String WEATHER_PATH = "/weather";
         final int INDEX_WEATHER_ID = 0;
         final int INDEX_MAX_TEMP = 1;
@@ -91,5 +92,4 @@ public class WearWeatherUpdater implements
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         Log.d(TAG, "Google API Client is FAILED");
     }
-
 }
