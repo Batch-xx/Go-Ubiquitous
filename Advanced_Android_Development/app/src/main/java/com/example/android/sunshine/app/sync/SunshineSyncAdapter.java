@@ -370,8 +370,13 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
                 updateWidgets();
                 updateMuzei();
                 notifyWeather();
-                updateWearable();
+
+                // Updates wearable weather service
+                WearWeatherService weatherSvc = (WearWeatherService) context
+                        .getSystemService(WearWeatherService.class);
+                weatherSvc.updateWearable();
             }
+
             Log.d(LOG_TAG, "Sync Complete. " + cVVector.size() + " Inserted");
             setLocationStatus(getContext(), LOCATION_STATUS_OK);
 
@@ -509,27 +514,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
     }
 
 
-    //TODO create wearable update
-    private void updateWearable() {
-        Context context = getContext();
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        String lastNotificationKey = context.getString(R.string.pref_last_notification);
-        long lastSync = prefs.getLong(lastNotificationKey, 0);
 
-        String locationQuery = Utility.getPreferredLocation(context);
-        Uri weatherUri = WeatherContract.WeatherEntry.buildWeatherLocationWithDate(
-                locationQuery, System.currentTimeMillis());
-
-        Cursor cursor = context.getContentResolver().query(weatherUri, NOTIFY_WEATHER_PROJECTION, null, null, null);
-
-        if (cursor.moveToFirst()) {
-            int weatherId = cursor.getInt(INDEX_WEATHER_ID);
-            double high = cursor.getDouble(INDEX_MAX_TEMP);
-            double low = cursor.getDouble(INDEX_MIN_TEMP);
-            String desc = cursor.getString(INDEX_SHORT_DESC);
-            String artUrl = Utility.getArtUrlForWeatherCondition(context, weatherId);
-        }
-    }
 
     /**
      * Helper method to handle insertion of a new location in the weather database.
