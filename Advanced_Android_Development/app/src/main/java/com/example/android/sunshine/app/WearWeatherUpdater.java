@@ -3,6 +3,7 @@ package com.example.android.sunshine.app;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -10,8 +11,13 @@ import android.util.Log;
 
 import com.example.android.sunshine.app.Utility;
 import com.example.android.sunshine.app.data.WeatherContract;
+import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataEvent;
+import com.google.android.gms.wearable.DataEventBuffer;
+import com.google.android.gms.wearable.DataItem;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.Wearable;
 
@@ -20,8 +26,11 @@ import com.google.android.gms.wearable.Wearable;
  */
 
 public class WearWeatherUpdater implements
-        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
+        DataApi.DataListener{
 
+    private static final String WEATHER_MOBILE_PATH = "/weather_mobile";
+    private static final String WEATHER_WEAR_PATH = "/weather_wear";
     private Context context;
     private GoogleApiClient mGoogleApiClient;
     private String TAG = "WearWeatherService";
@@ -39,7 +48,6 @@ public class WearWeatherUpdater implements
 
     public  void updateWearable() {
         mGoogleApiClient.blockingConnect();
-        final String WEATHER_PATH = "/weather";
         final int INDEX_WEATHER_ID = 0;
         final int INDEX_MAX_TEMP = 1;
         final int INDEX_MIN_TEMP = 2;
@@ -67,7 +75,7 @@ public class WearWeatherUpdater implements
             String artUrl = Utility.getArtUrlForWeatherCondition(context, weatherId);
             cursor.close();
 
-            PutDataMapRequest putDataMapReq = PutDataMapRequest.create(WEATHER_PATH);
+            PutDataMapRequest putDataMapReq = PutDataMapRequest.create(WEATHER_MOBILE_PATH);
             putDataMapReq.getDataMap().putDouble("HIGH", high);
             putDataMapReq.getDataMap().putDouble("LOW", low);
             putDataMapReq.getDataMap().putString("DESC", desc);
@@ -77,10 +85,13 @@ public class WearWeatherUpdater implements
         }
     }
 
+
+
+
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         Log.d(TAG, "Google API Client is CONNECTED");
-        //updateWearable();
+        Wearable.DataApi.addListener(mGoogleApiClient, this);
     }
 
     @Override
@@ -91,5 +102,21 @@ public class WearWeatherUpdater implements
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         Log.d(TAG, "Google API Client is FAILED");
+    }
+
+    @Override
+    public void onDataChanged(DataEventBuffer dataEventBuffer) {
+        if(dataEventBuffer.getStatus().isSuccess()){
+            Log.d(TAG, "On data changed received SUCCESS");
+            for(DataEvent event : dataEventBuffer){
+                DataItem item = event.getDataItem();
+                if(item.getUri().getPath().compareTo(WEATHER_WEAR_PATH) == 0){
+                    Log.d(TAG, "Sync wear to mobile...");
+                    SunshineSyncAdapter.syncImmediately(context);
+                }
+            }
+        }else{
+            Log.d(TAG, "On data changed received FAILED");
+        }
     }
 }
