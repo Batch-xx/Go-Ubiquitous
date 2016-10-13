@@ -12,21 +12,21 @@ import android.widget.TextView;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallbacks;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.DataItem;
+import com.google.android.gms.wearable.DataItemBuffer;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
-import com.google.android.gms.wearable.PutDataMapRequest;
-import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
 public class MainActivity extends Activity implements DataApi.DataListener,
         GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks{
 
     private static final String WEATHER_MOBILE_PATH = "/weather_mobile";
-    private static final String WEATHER_WEAR_PATH = "/weather_wear";
     private TextView mTextView;
     private GoogleApiClient mGoogleApiClient;
     private static final String TAG = "MainActivity";
@@ -95,19 +95,35 @@ public class MainActivity extends Activity implements DataApi.DataListener,
         Log.d(TAG,"Google API Client connected SUCCESS");
         Wearable.DataApi.addListener(mGoogleApiClient,this);
 
-        PutDataMapRequest putDataMapReq = PutDataMapRequest.create(WEATHER_WEAR_PATH);
-        PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
-        putDataMapReq.setUrgent();
-        new DataItemTask().execute(putDataReq);
+        getWeatherUpdate();
     }
 
-    private class DataItemTask extends AsyncTask<PutDataRequest,Void,Void>{
+    private void getWeatherUpdate(){
+        final PendingResult<DataItemBuffer> results = Wearable.DataApi.getDataItems(mGoogleApiClient);
+        results.setResultCallback(new ResultCallbacks<DataItemBuffer>() {
+            @Override
+            public void onSuccess(@NonNull DataItemBuffer dataItems) {
+                Log.d(TAG, "Received Data Item Callback SUCCESS");
+                for(DataItem item : dataItems){
+                    if(item.getUri().getPath().compareTo(WEATHER_MOBILE_PATH)==0){
+                        DataMapItem dataMapItem = DataMapItem.fromDataItem(item);
+                        DataMap map = dataMapItem.getDataMap();
+                        double high = map.get("HIGH");
+                        double low = map.get("LOW");
+                        String desc = map.get("DESC");
 
-        @Override
-        protected Void doInBackground(PutDataRequest... putDataRequests) {
-            Wearable.DataApi.putDataItem(mGoogleApiClient,putDataRequests[0]).await();
-            return null;
-        }
+                        Log.d(TAG, "High: " + high);
+                        Log.d(TAG, "Low: " + low);
+                        Log.d(TAG, "Desc: " + desc);
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Status status) {
+                Log.d(TAG,"Received Data Item Callback FAILED");
+            }
+        });
     }
 
     @Override

@@ -26,11 +26,9 @@ import com.google.android.gms.wearable.Wearable;
  */
 
 public class WearWeatherUpdater implements
-        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
-        DataApi.DataListener{
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
 
     private static final String WEATHER_MOBILE_PATH = "/weather_mobile";
-    private static final String WEATHER_WEAR_PATH = "/weather_wear";
     private Context context;
     private GoogleApiClient mGoogleApiClient;
     private String TAG = "WearWeatherService";
@@ -91,7 +89,6 @@ public class WearWeatherUpdater implements
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         Log.d(TAG, "Google API Client is CONNECTED");
-        Wearable.DataApi.addListener(mGoogleApiClient, this);
     }
 
     @Override
@@ -102,21 +99,5 @@ public class WearWeatherUpdater implements
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         Log.d(TAG, "Google API Client is FAILED");
-    }
-
-    @Override
-    public void onDataChanged(DataEventBuffer dataEventBuffer) {
-        if(dataEventBuffer.getStatus().isSuccess()){
-            Log.d(TAG, "On data changed received SUCCESS");
-            for(DataEvent event : dataEventBuffer){
-                DataItem item = event.getDataItem();
-                if(item.getUri().getPath().compareTo(WEATHER_WEAR_PATH) == 0){
-                    Log.d(TAG, "Sync wear to mobile...");
-                    SunshineSyncAdapter.syncImmediately(context);
-                }
-            }
-        }else{
-            Log.d(TAG, "On data changed received FAILED");
-        }
     }
 }
