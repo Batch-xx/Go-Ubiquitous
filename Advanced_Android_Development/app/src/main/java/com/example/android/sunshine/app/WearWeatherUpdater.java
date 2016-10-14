@@ -2,24 +2,22 @@ package com.example.android.sunshine.app;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import com.example.android.sunshine.app.Utility;
 import com.example.android.sunshine.app.data.WeatherContract;
-import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.wearable.DataApi;
-import com.google.android.gms.wearable.DataEvent;
-import com.google.android.gms.wearable.DataEventBuffer;
-import com.google.android.gms.wearable.DataItem;
+import com.google.android.gms.wearable.Asset;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.Wearable;
+
+import java.io.ByteArrayOutputStream;
 
 /**
  * Created by BKBatchelor on 10/12/2016.
@@ -71,16 +69,27 @@ public class WearWeatherUpdater implements
             double low = cursor.getDouble(INDEX_MIN_TEMP);
             String desc = cursor.getString(INDEX_SHORT_DESC);
             String artUrl = Utility.getArtUrlForWeatherCondition(context, weatherId);
+            int imageResourceId = Utility.getArtResourceForWeatherCondition(weatherId);
+            Asset imageAsset = createImageAsset(imageResourceId);
+
             cursor.close();
 
             PutDataMapRequest putDataMapReq = PutDataMapRequest.create(WEATHER_MOBILE_PATH);
             putDataMapReq.getDataMap().putDouble("HIGH", high);
             putDataMapReq.getDataMap().putDouble("LOW", low);
             putDataMapReq.getDataMap().putString("DESC", desc);
+            putDataMapReq.getDataMap().putAsset("IMG", imageAsset);
             putDataMapReq.setUrgent();
 
             Wearable.DataApi.putDataItem(mGoogleApiClient, putDataMapReq.asPutDataRequest()).await();
         }
+    }
+
+    private Asset createImageAsset(int imageResourceId){
+        Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), imageResourceId);
+        final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG,80,byteStream);
+        return Asset.createFromBytes(byteStream.toByteArray());
     }
 
 
