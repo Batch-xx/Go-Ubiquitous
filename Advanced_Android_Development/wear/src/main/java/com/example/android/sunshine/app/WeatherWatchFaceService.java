@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Bundle;
@@ -14,11 +13,14 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.SurfaceHolder;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
 
 public class WeatherWatchFaceService extends CanvasWatchFaceService {
@@ -55,6 +57,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
         private Calendar mCalendar;
         private Date mDate= null;
+        private SimpleDateFormat mDayOfTheWeek = null;
+        private java.text.DateFormat mDateFormat = null;
 
         //device features
         private boolean mLowBitAmbient;
@@ -121,6 +125,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             mCalendar = Calendar.getInstance();
             mDate = new Date();
+            initFormats();
         }
 
         @Override
@@ -160,6 +165,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             } else {
                 unregisterReciever();
             }
+        }
+
+        private void initFormats(){
+            mDayOfTheWeek = new SimpleDateFormat("EEEE", Locale.getDefault());
+            mDayOfTheWeek.setCalendar(mCalendar);
+            mDateFormat = DateFormat.getDateFormat(WeatherWatchFaceService.this);
+            mDateFormat.setCalendar(mCalendar);
         }
 
         private void registerReceiver() {
