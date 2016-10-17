@@ -10,9 +10,9 @@
 
     <ImageView
         android:src="@mipmap/ic_launcher"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/text"
+        android:layout_width="@dimen/action_drawer_item_icon_size"
+        android:layout_height="@dimen/action_drawer_item_icon_size"
         android:layout_centerHorizontal="true"
-        android:id="@+id/imageView" />
+        android:id="@+id/imageView"
+        android:layout_below="@+id/text" />
 </RelativeLayout>

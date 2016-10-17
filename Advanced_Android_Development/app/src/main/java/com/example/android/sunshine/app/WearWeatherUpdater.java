@@ -24,14 +24,14 @@ import java.io.ByteArrayOutputStream;
  */
 
 public class WearWeatherUpdater implements
-        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private static final String WEATHER_MOBILE_PATH = "/weather_mobile";
     private Context context;
     private GoogleApiClient mGoogleApiClient;
     private String TAG = "WearWeatherService";
 
-    public WearWeatherUpdater(Context context){
+    public WearWeatherUpdater(Context context) {
         this.context = context;
 
         mGoogleApiClient = new GoogleApiClient.Builder(context)
@@ -42,7 +42,7 @@ public class WearWeatherUpdater implements
 
     }
 
-    public  void updateWearable() {
+    public void updateWearable() {
         mGoogleApiClient.blockingConnect();
         final int INDEX_WEATHER_ID = 0;
         final int INDEX_MAX_TEMP = 1;
@@ -85,14 +85,12 @@ public class WearWeatherUpdater implements
         }
     }
 
-    private Asset createImageAsset(int imageResourceId){
+    private Asset createImageAsset(int imageResourceId) {
         Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), imageResourceId);
         final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG,80,byteStream);
+        bitmap.compress(Bitmap.CompressFormat.PNG, 80, byteStream);
         return Asset.createFromBytes(byteStream.toByteArray());
     }
-
-
 
 
     @Override
