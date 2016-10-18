@@ -23,7 +23,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-public class WeatherWatchFaceService extends CanvasWatchFaceService {
+public class WeatherWatchFaceService extends CanvasWatchFaceService  {
     private boolean mIsRegisteredReceiver = false;
     private static String TAG = "WeatherWatchFaceService";
 
@@ -48,7 +48,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         private int mDateLineHt = 0;
         private int mTempLineHt = 0;
 
-        //Paint
+        //Graphic objects
         Paint mBackgroundPaint = null;
         Paint mDataPaint = null;
         Paint mTimePaint = null;
@@ -56,16 +56,14 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
 
         private Calendar mCalendar;
-        private Date mDate= null;
+        private Date mDate = null;
         private SimpleDateFormat mDayOfTheWeek = null;
         private java.text.DateFormat mDateFormat = null;
 
         //device features
         private boolean mLowBitAmbient;
+        private boolean mBurnnProtection;
 
-        //Graphic objects
-        private Paint mHourPaint;
-        private Paint mMinutePaint;
 
         //handler to update the timer once a second in the interactive mode
         final Handler mUpdateTimeHandler = new Handler() {
@@ -100,10 +98,10 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             /*initialize your watch face */
             super.onCreate(holder);
             setWatchFaceStyle(new WatchFaceStyle.Builder(WeatherWatchFaceService.this)
-            .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
-            .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
-            .setShowSystemUiTime(false)
-            .build());
+                    .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
+                    .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
+                    .setShowSystemUiTime(false)
+                    .build());
 
             Resources resources = WeatherWatchFaceService.this.getResources();
             mTimeYOffset = resources.getDimensionPixelOffset(R.dimen.time_y_offset);
@@ -121,7 +119,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mDataPaint = new Paint();
             mDataPaint.setColor(Utility.DATE_COLOR_INTERACTIVE);
             mTimePaint = new Paint();
-            mTimePaint.setColor(Utility.TEMP_COLOR_INTERACTIVE);
+            mTimePaint.setColor(Utility.TIME_COLOR_INTERACTIVE);
+            mTempPaint = new Paint();
+            mTempPaint.setColor(Utility.TEMP_COLOR_INTERACTIVE);
 
             mCalendar = Calendar.getInstance();
             mDate = new Date();
@@ -130,26 +130,53 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
         @Override
         public void onPropertiesChanged(Bundle properties) {
-            /*get device features (burn-in, Low bit ambient */
             super.onPropertiesChanged(properties);
+            mLowBitAmbient = properties.getBoolean(PROPERTY_LOW_BIT_AMBIENT, false);
+            mBurnnProtection = properties.getBoolean(PROPERTY_BURN_IN_PROTECTION, false);
         }
 
         @Override
         public void onTimeTick() {
             super.onTimeTick();
-            /*the time changed */
+            invalidate();
         }
 
         @Override
         public void onAmbientModeChanged(boolean inAmbientMode) {
             super.onAmbientModeChanged(inAmbientMode);
-            /*the wearable switched between modes */
+            if (mLowBitAmbient) {
+                boolean antialias = !inAmbientMode;
+                mTimePaint.setAntiAlias(antialias);
+                mDataPaint.setAntiAlias(antialias);
+                mTempPaint.setAntiAlias(antialias);
+            }
+            invalidate();
+            updateTimer();
         }
 
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
             super.onDraw(canvas, bounds);
+            //background
+            canvas.drawRect(bounds.left, bounds.top, bounds.right, bounds.bottom, mBackgroundPaint);
+
+            mCalendar.setTimeInMillis(System.currentTimeMillis());
+            mCalendar.setTimeZone(TimeZone.getDefault());
+
+            String date = mDateFormat.format(new Date());
+            Locale loc = Locale.getDefault();
+
+            String timeText = String.format(loc, "%d:%02d", mCalendar.get(Calendar.HOUR),
+                    mCalendar.get(Calendar.MINUTE));
+
+
             /*draw your watch face*/
+        }
+
+        @Override
+        public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+            /* Uesed to resize imagees */
+            super.onSurfaceChanged(holder, format, width, height);
         }
 
         @Override
@@ -165,9 +192,10 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             } else {
                 unregisterReciever();
             }
+            updateTimer();
         }
 
-        private void initFormats(){
+        private void initFormats() {
             mDayOfTheWeek = new SimpleDateFormat("EEEE", Locale.getDefault());
             mDayOfTheWeek.setCalendar(mCalendar);
             mDateFormat = DateFormat.getDateFormat(WeatherWatchFaceService.this);
@@ -193,17 +221,18 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mIsRegisteredReceiver = false;
             WeatherWatchFaceService.this.unregisterReceiver(mTimeZoneReceiver);
         }
-        private void updateTimer(){
+
+        private void updateTimer() {
             Log.d(TAG, "Updating timer");
 
             mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
-            if(shouldTimerBeRunning()){
+            if (shouldTimerBeRunning()) {
                 mUpdateTimeHandler.sendEmptyMessage(MSG_UPDATE_TIME);
             }
 
         }
 
-        private boolean shouldTimerBeRunning(){
+        private boolean shouldTimerBeRunning() {
             return isVisible() && !isInAmbientMode();
         }
     }
