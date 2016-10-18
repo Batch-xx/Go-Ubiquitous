@@ -5,25 +5,45 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.SurfaceHolder;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallbacks;
+import com.google.android.gms.wearable.Asset;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataEvent;
+import com.google.android.gms.wearable.DataEventBuffer;
+import com.google.android.gms.wearable.DataItem;
+import com.google.android.gms.wearable.DataItemBuffer;
+import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.DataMapItem;
+import com.google.android.gms.wearable.Wearable;
+
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-public class WeatherWatchFaceService extends CanvasWatchFaceService  {
+public class WeatherWatchFaceService extends CanvasWatchFaceService {
     private boolean mIsRegisteredReceiver = false;
     private static String TAG = "WeatherWatchFaceService";
 
@@ -35,8 +55,10 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService  {
         return new Engine();
     }
 
-    private class Engine extends CanvasWatchFaceService.Engine {
+    private class Engine extends CanvasWatchFaceService.Engine implements DataApi.DataListener,
+            GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
         private static final int MSG_UPDATE_TIME = 0;
+        private static final String WEATHER_MOBILE_PATH = "/weather_mobile";
 
         //Offsets
         private int mTimeYOffset = 0;
@@ -49,10 +71,14 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService  {
         private int mTempLineHt = 0;
 
         //Graphic objects
-        Paint mBackgroundPaint = null;
-        Paint mDataPaint = null;
-        Paint mTimePaint = null;
-        Paint mTempPaint = null;
+        private Paint mBackgroundPaint = null;
+        private Paint mDataPaint = null;
+        private Paint mTimePaint = null;
+        private Paint mTempPaint = null;
+
+        //Updated Values
+        private String mLowTemp = "--";
+        private String mHiTemp = "--";
 
 
         private Calendar mCalendar;
@@ -63,6 +89,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService  {
         //device features
         private boolean mLowBitAmbient;
         private boolean mBurnnProtection;
+
+        //Google API Client
+        private GoogleApiClient mGoogleApiClient;
 
 
         //handler to update the timer once a second in the interactive mode
@@ -97,6 +126,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService  {
         public void onCreate(SurfaceHolder holder) {
             /*initialize your watch face */
             super.onCreate(holder);
+            mGoogleApiClient = new GoogleApiClient.Builder(WeatherWatchFaceService.this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(Wearable.API)
+                    .build();
+            mGoogleApiClient.connect();
+
             setWatchFaceStyle(new WatchFaceStyle.Builder(WeatherWatchFaceService.this)
                     .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
@@ -127,6 +163,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService  {
             mDate = new Date();
             initFormats();
         }
+
 
         @Override
         public void onPropertiesChanged(Bundle properties) {
@@ -169,8 +206,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService  {
             String timeText = String.format(loc, "%d:%02d", mCalendar.get(Calendar.HOUR),
                     mCalendar.get(Calendar.MINUTE));
 
-
-            /*draw your watch face*/
+            canvas.drawText(mHiTemp, bounds.width() / 2, bounds.height() / 2 - 45, mTempPaint);
         }
 
         @Override
@@ -190,7 +226,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService  {
 
 
             } else {
-                unregisterReciever();
+                unregisterReceiver();
             }
             updateTimer();
         }
@@ -214,7 +250,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService  {
             WeatherWatchFaceService.this.registerReceiver(mTimeZoneReceiver, filter);
         }
 
-        private void unregisterReciever() {
+        private void unregisterReceiver() {
             if (!mIsRegisteredReceiver) {
                 return;
             }
@@ -234,6 +270,124 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService  {
 
         private boolean shouldTimerBeRunning() {
             return isVisible() && !isInAmbientMode();
+        }
+
+        @Override
+        public void onConnected(@Nullable Bundle bundle) {
+            Log.d(TAG, "Google API Client connected SUCCESS");
+            Wearable.DataApi.addListener(mGoogleApiClient, this);
+            new WeatherUpdateTask().execute();
+        }
+
+        @Override
+        public void onConnectionSuspended(int i) {
+            Log.d(TAG, "Google API Client is SUSPENDED");
+        }
+
+        @Override
+        public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+            Log.d(TAG, "Google API Client is FAILED");
+        }
+
+        @Override
+        public void onDataChanged(DataEventBuffer dataEventBuffer) {
+            if (dataEventBuffer.getStatus().isSuccess()) {
+                Log.d(TAG, "Data change item  received SUCCESS");
+
+                for (DataEvent event : dataEventBuffer) {
+                    DataItem item = event.getDataItem();
+                    if (event.getType() == DataEvent.TYPE_CHANGED) {
+                        if (item.getUri().getPath().compareTo(WEATHER_MOBILE_PATH) == 0) {
+                            DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
+                            mHiTemp = String.valueOf(dataMap.get("HIGH"));
+                            mLowTemp = String.valueOf(dataMap.get("LOW"));
+                            String desc = dataMap.get("DESC");
+                            Asset imageAsset = dataMap.getAsset("IMG");
+                            new LoadBitmapFromAsset().execute(imageAsset);
+
+                            Log.d(TAG, "High: " + mHiTemp);
+                            Log.d(TAG, "Low: " + mLowTemp);
+                            Log.d(TAG, "Desc: " + desc);
+                            invalidate();
+                        }
+                    } else if (event.getType() == DataEvent.TYPE_DELETED) {
+
+                    }
+                }
+            } else {
+                Log.d(TAG, "Data change item received FAILED");
+            }
+        }
+
+        private class WeatherUpdateTask extends AsyncTask<Void, Void, Void> {
+
+            @Override
+            protected Void doInBackground(Void... voids) {
+                mGoogleApiClient.blockingConnect();
+                final PendingResult<DataItemBuffer> results = Wearable.DataApi.getDataItems(mGoogleApiClient);
+                results.setResultCallback(new ResultCallbacks<DataItemBuffer>() {
+                    @Override
+                    public void onSuccess(@NonNull DataItemBuffer dataItems) {
+                        Log.d(TAG, "Received Data Item Callback SUCCESS");
+                        for (DataItem item : dataItems) {
+                            if (item.getUri().getPath().compareTo(WEATHER_MOBILE_PATH) == 0) {
+                                DataMapItem dataMapItem = DataMapItem.fromDataItem(item);
+                                DataMap map = dataMapItem.getDataMap();
+                                mHiTemp = String.valueOf(map.get("HIGH"));
+                                mLowTemp = String.valueOf(map.get("LOW"));
+                                String desc = map.get("DESC");
+                                Asset imageAsset = dataMapItem.getDataMap().getAsset("IMG");
+                                new LoadBitmapFromAsset().execute(imageAsset);
+
+                                Log.d(TAG, "High: " + mHiTemp);
+                                Log.d(TAG, "Low: " + mLowTemp);
+                                Log.d(TAG, "Desc: " + desc);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull com.google.android.gms.common.api.Status status) {
+
+                    }
+                });
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                invalidate();
+            }
+        }
+
+        private class LoadBitmapFromAsset extends AsyncTask<Asset, Bitmap, Bitmap> {
+            @Override
+            protected Bitmap doInBackground(Asset... assets) {
+                Asset asset = assets[0];
+                if (asset == null) {
+                    throw new IllegalArgumentException("Asset is null/invalid");
+                }
+
+                ConnectionResult result = mGoogleApiClient.blockingConnect();
+                if (!result.isSuccess()) {
+                    Log.d(TAG, "Google API Client connection FAILED");
+                    return null;
+                }
+                InputStream assetStream = Wearable.DataApi.getFdForAsset(mGoogleApiClient, asset)
+                        .await().getInputStream();
+
+                if (assetStream == null) {
+                    Log.d(TAG, "Null/invaild asset");
+                }
+
+                return BitmapFactory.decodeStream(assetStream);
+            }
+
+            @Override
+            protected void onPostExecute(Bitmap bitmap) {
+                //TODO place image into placeholder
+            }
+
         }
     }
 }
