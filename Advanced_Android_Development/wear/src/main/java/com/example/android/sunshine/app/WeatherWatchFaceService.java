@@ -236,7 +236,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             String date = mDateFormat.format(new Date());
             Locale loc = Locale.getDefault();
 
-            String timeText = String.format(loc, "%d:%02d", mCalendar.get(Calendar.HOUR),
+            String timeText = String.format(loc, "%s:%02d", hourConverter(mCalendar.get(Calendar.HOUR)),
                     mCalendar.get(Calendar.MINUTE));
             float timeTextWidth = mTimePaint.measureText(timeText);
             canvas.drawText(timeText, (bounds.width() / 2) - (int) timeTextWidth / 2,
@@ -247,6 +247,17 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             float dateTextWidth = mDatePaint.measureText(dateText);
             canvas.drawText(dateText, (bounds.width() / 2) - (int) dateTextWidth / 2,
                     bounds.height() / 2 + mDateYOffset / 2, mDatePaint);
+        }
+        private String hourConverter(int hour){
+            boolean is24Hour = DateFormat.is24HourFormat(WeatherWatchFaceService.this);
+            if(is24Hour){
+                return  String.format(Locale.getDefault(),"%02d", mCalendar.get(Calendar.HOUR_OF_DAY));
+            }else {
+                if(hour == 0){
+                    hour = 12;
+                }
+            }
+            return String.valueOf(hour);
         }
 
         private String monthConverter(int month) {
