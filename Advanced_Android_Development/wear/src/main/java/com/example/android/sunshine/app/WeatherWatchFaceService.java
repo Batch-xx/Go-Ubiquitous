@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -72,9 +73,19 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
         //Graphic objects
         private Paint mBackgroundPaint = null;
-        private Paint mDataPaint = null;
+        private Paint mDatePaint = null;
         private Paint mTimePaint = null;
         private Paint mTempPaint = null;
+
+        //Font Properties
+        private  final Typeface NORMAL_TYPE_TIME = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
+        private  final Typeface BOLD_TYPE_TIME = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
+
+        private  final Typeface NORMAL_TYPE_DATE = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
+        private  final Typeface BOLD_TYPE_DATE = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
+
+        private  final Typeface NORMAL_TYPE_TEMP = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
+        private  final Typeface BOLD_TYPE_TEMP = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
 
         //Updated Values
         private String mLowTemp = "--";
@@ -150,19 +161,31 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(Utility.BACKGROUND_COLOR_INTERACTIVE);
+
             mTimePaint = new Paint();
             mTimePaint.setColor(Utility.TIME_COLOR_INTERACTIVE);
-            mDataPaint = new Paint();
-            mDataPaint.setColor(Utility.DATE_COLOR_INTERACTIVE);
-            mTimePaint = new Paint();
-            mTimePaint.setColor(Utility.TIME_COLOR_INTERACTIVE);
+            mTimePaint.setAntiAlias(true);
+            mTimePaint.setTypeface(NORMAL_TYPE_TIME);
+            mTimePaint.setTextSize(resources.getDimensionPixelSize(R.dimen.time_line_ht));
+
+            mDatePaint = new Paint();
+            mDatePaint.setColor(Utility.DATE_COLOR_INTERACTIVE);
+            mDatePaint.setAntiAlias(true);
+            mDatePaint.setTypeface(NORMAL_TYPE_DATE);
+            mDatePaint.setTextSize(resources.getDimensionPixelSize(R.dimen.date_line_ht));
+
             mTempPaint = new Paint();
-            mTempPaint.setColor(Utility.TEMP_COLOR_INTERACTIVE);
+            mTempPaint.setColor(Utility.TIME_COLOR_INTERACTIVE);
+            mTempPaint.setAntiAlias(true);
+            mTempPaint.setTypeface(NORMAL_TYPE_TEMP);
+            mTempPaint.setTextSize(resources.getDimensionPixelSize(R.dimen.temp_line_ht));
+
 
             mCalendar = Calendar.getInstance();
             mDate = new Date();
             initFormats();
         }
+
 
 
         @Override
@@ -184,7 +207,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             if (mLowBitAmbient) {
                 boolean antialias = !inAmbientMode;
                 mTimePaint.setAntiAlias(antialias);
-                mDataPaint.setAntiAlias(antialias);
+                mDatePaint.setAntiAlias(antialias);
                 mTempPaint.setAntiAlias(antialias);
             }
             invalidate();

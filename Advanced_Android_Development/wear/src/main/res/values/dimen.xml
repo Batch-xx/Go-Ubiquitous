@@ -5,7 +5,7 @@
     <dimen name="date_y_offset">10dp</dimen>
     <dimen name="temp_y_offset">10dp</dimen>
     <!-- Line Height -->
-    <dimen name="time_line_ht">10dp</dimen>
-    <dimen name="date_line_ht">10dp</dimen>
-    <dimen name="temp_line_ht">10dp</dimen>
+    <dimen name="time_line_ht">20dp</dimen>
+    <dimen name="date_line_ht">20dp</dimen>
+    <dimen name="temp_line_ht">20dp</dimen>
 </resources>
