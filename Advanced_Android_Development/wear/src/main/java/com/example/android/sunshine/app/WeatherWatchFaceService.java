@@ -78,14 +78,14 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         private Paint mTempPaint = null;
 
         //Font Properties
-        private  final Typeface NORMAL_TYPE_TIME = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
-        private  final Typeface BOLD_TYPE_TIME = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
+        private final Typeface NORMAL_TYPE_TIME = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
+        private final Typeface BOLD_TYPE_TIME = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
 
-        private  final Typeface NORMAL_TYPE_DATE = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
-        private  final Typeface BOLD_TYPE_DATE = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
+        private final Typeface NORMAL_TYPE_DATE = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
+        private final Typeface BOLD_TYPE_DATE = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
 
-        private  final Typeface NORMAL_TYPE_TEMP = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
-        private  final Typeface BOLD_TYPE_TEMP = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
+        private final Typeface NORMAL_TYPE_TEMP = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
+        private final Typeface BOLD_TYPE_TEMP = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
 
         //Updated Values
         private String mLowTemp = "--";
@@ -99,7 +99,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
         //device features
         private boolean mLowBitAmbient;
-        private boolean mBurnnProtection;
+        private boolean mBurnProtection;
 
         //Google API Client
         private GoogleApiClient mGoogleApiClient;
@@ -160,12 +160,12 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mTempLineHt = resources.getDimensionPixelOffset(R.dimen.time_line_ht);
 
             mBackgroundPaint = new Paint();
-            mBackgroundPaint.setColor(Utility.BACKGROUND_COLOR_INTERACTIVE);
+
 
             mTimePaint = new Paint();
             mTimePaint.setColor(Utility.TIME_COLOR_INTERACTIVE);
             mTimePaint.setAntiAlias(true);
-            mTimePaint.setTypeface(NORMAL_TYPE_TIME);
+            mTimePaint.setTypeface(BOLD_TYPE_TIME);
             mTimePaint.setTextSize(resources.getDimensionPixelSize(R.dimen.time_line_ht));
 
             mDatePaint = new Paint();
@@ -187,12 +187,11 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         }
 
 
-
         @Override
         public void onPropertiesChanged(Bundle properties) {
             super.onPropertiesChanged(properties);
             mLowBitAmbient = properties.getBoolean(PROPERTY_LOW_BIT_AMBIENT, false);
-            mBurnnProtection = properties.getBoolean(PROPERTY_BURN_IN_PROTECTION, false);
+            mBurnProtection = properties.getBoolean(PROPERTY_BURN_IN_PROTECTION, false);
         }
 
         @Override
@@ -210,6 +209,11 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mDatePaint.setAntiAlias(antialias);
                 mTempPaint.setAntiAlias(antialias);
             }
+
+            mTimePaint.setTypeface(inAmbientMode == true ? NORMAL_TYPE_TIME : BOLD_TYPE_TIME);
+           // mDatePaint.setTypeface(inAmbientMode == true ? NORMAL_TYPE_DATE : NORMAL_TYPE_DATE);
+            mTempPaint.setTypeface(inAmbientMode == true ? NORMAL_TYPE_TEMP : BOLD_TYPE_TEMP);
+
             invalidate();
             updateTimer();
         }
@@ -218,7 +222,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         public void onDraw(Canvas canvas, Rect bounds) {
             super.onDraw(canvas, bounds);
             //background
-            canvas.drawRect(bounds.left, bounds.top, bounds.right, bounds.bottom, mBackgroundPaint);
+            if (isInAmbientMode()) {
+                mBackgroundPaint.setColor(Utility.BACKGROUND_COLOR_AMBIENT);
+                canvas.drawRect(bounds.left, bounds.top, bounds.right, bounds.bottom, mBackgroundPaint);
+            } else {
+                mBackgroundPaint.setColor(Utility.BACKGROUND_COLOR_INTERACTIVE);
+                canvas.drawRect(bounds.left, bounds.top, bounds.right, bounds.bottom, mBackgroundPaint);
+            }
 
             mCalendar.setTimeInMillis(System.currentTimeMillis());
             mCalendar.setTimeZone(TimeZone.getDefault());
@@ -228,13 +238,54 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             String timeText = String.format(loc, "%d:%02d", mCalendar.get(Calendar.HOUR),
                     mCalendar.get(Calendar.MINUTE));
+            float timeTextWidth = mTimePaint.measureText(timeText);
+            canvas.drawText(timeText, (bounds.width() / 2) - (int) timeTextWidth / 2,
+                    bounds.height() / 2 - mTimeYOffset / 2, mTimePaint);
 
-            canvas.drawText(mHiTemp, bounds.width() / 2, bounds.height() / 2 - 45, mTempPaint);
+            String dateText = String.format(loc, "%s %d, %d", monthConverter(mCalendar.get(Calendar.MONTH)),
+                    mCalendar.get(Calendar.DAY_OF_MONTH), mCalendar.get(Calendar.YEAR));
+            float dateTextWidth = mDatePaint.measureText(dateText);
+            canvas.drawText(dateText, (bounds.width() / 2) - (int) dateTextWidth / 2,
+                    bounds.height() / 2 + mDateYOffset / 2, mDatePaint);
+        }
+
+        private String monthConverter(int month) {
+            switch (month) {
+                case 0:
+                    return "JAN";
+                case 1:
+                    return "FEB";
+                case 2:
+                    return "MAR";
+                case 3:
+                    return "APR";
+                case 4:
+                    return "MAY";
+                case 5:
+                    return "JUN";
+                case 6:
+                    return "JUL";
+                case 7:
+                    return "AUG";
+                case 8:
+                    return "SEPT";
+                case 9:
+                    return "OCT";
+                case 10:
+                    return "NOV";
+                case 11:
+                    return "DEC";
+                default:
+                    return "---";
+
+            }
+
+
         }
 
         @Override
         public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-            /* Uesed to resize imagees */
+            /* Used to resize images */
             super.onSurfaceChanged(holder, format, width, height);
         }
 
