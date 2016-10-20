@@ -66,16 +66,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         private int mDateYOffset = 0;
         private int mTempYOffset = 0;
 
-        //Line Height
-        private int mTimeLineHt = 0;
-        private int mDateLineHt = 0;
-        private int mTempLineHt = 0;
 
         //Graphic objects
         private Paint mBackgroundPaint = null;
         private Paint mDatePaint = null;
         private Paint mTimePaint = null;
-        private Paint mTempPaint = null;
+        private Paint mTempHiPaint = null;
+        private Paint mTempLoPaint = null;
         private Paint mImagePaint = null;
 
         //Font Properties
@@ -89,8 +86,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         private final Typeface BOLD_TYPE_TEMP = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
 
         //Updated Values
-        private String mLowTemp = "--";
-        private String mHiTemp = "--";
+        private int mLowTemp = 0;
+        private int mHiTemp = 0;
         private Bitmap mWeatherImage = null;
 
 
@@ -157,9 +154,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mDateYOffset = resources.getDimensionPixelOffset(R.dimen.date_y_offset);
             mTempYOffset = resources.getDimensionPixelOffset(R.dimen.temp_y_offset);
 
-            mTimeLineHt = resources.getDimensionPixelOffset(R.dimen.time_line_ht);
-            mDateLineHt = resources.getDimensionPixelOffset(R.dimen.date_line_ht);
-            mTempLineHt = resources.getDimensionPixelOffset(R.dimen.time_line_ht);
+//            mTimeLineHt = resources.getDimensionPixelOffset(R.dimen.time_line_ht);
+//            mDateLineHt = resources.getDimensionPixelOffset(R.dimen.date_line_ht);
+//            mTempLineHt = resources.getDimensionPixelOffset(R.dimen.time_line_ht);
 
             mBackgroundPaint = new Paint();
 
@@ -176,11 +173,17 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mDatePaint.setTypeface(NORMAL_TYPE_DATE);
             mDatePaint.setTextSize(resources.getDimensionPixelSize(R.dimen.date_line_ht));
 
-            mTempPaint = new Paint();
-            mTempPaint.setColor(Utility.TIME_COLOR_INTERACTIVE);
-            mTempPaint.setAntiAlias(true);
-            mTempPaint.setTypeface(NORMAL_TYPE_TEMP);
-            mTempPaint.setTextSize(resources.getDimensionPixelSize(R.dimen.temp_line_ht));
+            mTempHiPaint = new Paint();
+            mTempHiPaint.setColor(Utility.TIME_COLOR_INTERACTIVE);
+            mTempHiPaint.setAntiAlias(true);
+            mTempHiPaint.setTypeface(NORMAL_TYPE_TEMP);
+            mTempHiPaint.setTextSize(resources.getDimensionPixelSize(R.dimen.temp_hi_line_ht));
+
+            mTempLoPaint = new Paint();
+            mTempLoPaint.setColor(Utility.TIME_COLOR_INTERACTIVE);
+            mTempLoPaint.setAntiAlias(true);
+            mTempLoPaint.setTypeface(NORMAL_TYPE_TEMP);
+            mTempLoPaint.setTextSize(resources.getDimensionPixelSize(R.dimen.temp_lo_line_ht));
 
             mImagePaint = new Paint();
             mImagePaint.setAntiAlias(true);
@@ -211,12 +214,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 boolean antialias = !inAmbientMode;
                 mTimePaint.setAntiAlias(antialias);
                 mDatePaint.setAntiAlias(antialias);
-                mTempPaint.setAntiAlias(antialias);
+                mTempHiPaint.setAntiAlias(antialias);
+                mTempLoPaint.setAntiAlias(antialias);
             }
 
             mTimePaint.setTypeface(inAmbientMode == true ? NORMAL_TYPE_TIME : BOLD_TYPE_TIME);
-           // mDatePaint.setTypeface(inAmbientMode == true ? NORMAL_TYPE_DATE : NORMAL_TYPE_DATE);
-            mTempPaint.setTypeface(inAmbientMode == true ? NORMAL_TYPE_TEMP : BOLD_TYPE_TEMP);
+            mTempHiPaint.setTypeface(inAmbientMode == true ? NORMAL_TYPE_TEMP : BOLD_TYPE_TEMP);
+            mTempLoPaint.setTypeface(inAmbientMode == true ? NORMAL_TYPE_TEMP : BOLD_TYPE_TEMP);
 
             invalidate();
             updateTimer();
@@ -237,7 +241,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mCalendar.setTimeInMillis(System.currentTimeMillis());
             mCalendar.setTimeZone(TimeZone.getDefault());
 
-            String date = mDateFormat.format(new Date());
             Locale loc = Locale.getDefault();
 
             String timeText = String.format(loc, "%s:%02d", hourConverter(mCalendar.get(Calendar.HOUR)),
@@ -252,10 +255,21 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             canvas.drawText(dateText, (bounds.width() / 2) - (int) dateTextWidth / 2,
                     bounds.height() / 2 + mDateYOffset, mDatePaint);
 
-            if(mWeatherImage != null){
-                canvas.drawBitmap(mWeatherImage,(bounds.width() / 2) - 100, bounds.height() / 2 + mTempYOffset ,mImagePaint);
+            if(!isInAmbientMode()){
+                if(mWeatherImage != null){
+                    canvas.drawBitmap(mWeatherImage,(bounds.width() / 2) - 100, bounds.height() / 2 + mTempYOffset ,mImagePaint);
+                }
             }
 
+            String hiTemp = String.format(loc,"%d\u00b0 ",(int)mHiTemp);
+            float hiTempTextWidth = mTempHiPaint.measureText(String.valueOf(mHiTemp));
+            canvas.drawText(hiTemp, (bounds.width() / 2) - (int) hiTempTextWidth / 2 ,
+                    bounds.height() / 2 + mTempYOffset + 50, mTempHiPaint);
+
+            String loTemp = String.format(loc,"%d\u00b0 ",(int)mLowTemp);
+            float loTempTextWidth = mTempLoPaint.measureText(String.valueOf(mLowTemp));
+            canvas.drawText(loTemp, (bounds.width() / 2) - (int) loTempTextWidth / 2 + 60,
+                    bounds.height() / 2 + mTempYOffset + 46, mTempLoPaint);
 
         }
         private String hourConverter(int hour){
@@ -394,8 +408,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                     if (event.getType() == DataEvent.TYPE_CHANGED) {
                         if (item.getUri().getPath().compareTo(WEATHER_MOBILE_PATH) == 0) {
                             DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-                            mHiTemp = String.valueOf(dataMap.get("HIGH"));
-                            mLowTemp = String.valueOf(dataMap.get("LOW"));
+                            mHiTemp = dataMap.getInt("HIGH");
+                            mLowTemp = dataMap.getInt("LOW");
                             String desc = dataMap.get("DESC");
                             Asset imageAsset = dataMap.getAsset("IMG");
                             new LoadBitmapFromAsset().execute(imageAsset);
@@ -428,8 +442,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                             if (item.getUri().getPath().compareTo(WEATHER_MOBILE_PATH) == 0) {
                                 DataMapItem dataMapItem = DataMapItem.fromDataItem(item);
                                 DataMap map = dataMapItem.getDataMap();
-                                mHiTemp = String.valueOf(map.get("HIGH"));
-                                mLowTemp = String.valueOf(map.get("LOW"));
+                                mHiTemp = map.getInt("HIGH");
+                                mLowTemp = map.getInt("LOW");
                                 String desc = map.get("DESC");
                                 Asset imageAsset = dataMapItem.getDataMap().getAsset("IMG");
                                 new LoadBitmapFromAsset().execute(imageAsset);

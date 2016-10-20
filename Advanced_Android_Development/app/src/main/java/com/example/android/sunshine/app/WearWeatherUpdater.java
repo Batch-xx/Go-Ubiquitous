@@ -75,8 +75,8 @@ public class WearWeatherUpdater implements
             cursor.close();
 
             PutDataMapRequest putDataMapReq = PutDataMapRequest.create(WEATHER_MOBILE_PATH);
-            putDataMapReq.getDataMap().putDouble("HIGH", high);
-            putDataMapReq.getDataMap().putDouble("LOW", low);
+            putDataMapReq.getDataMap().putInt("HIGH", (int)high);
+            putDataMapReq.getDataMap().putInt("LOW", (int)low);
             putDataMapReq.getDataMap().putString("DESC", desc);
             putDataMapReq.getDataMap().putAsset("IMG", imageAsset);
             putDataMapReq.setUrgent();

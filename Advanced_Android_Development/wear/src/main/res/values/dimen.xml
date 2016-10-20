@@ -7,5 +7,6 @@
     <!-- Line Height -->
     <dimen name="time_line_ht">50dp</dimen>
     <dimen name="date_line_ht">20dp</dimen>
-    <dimen name="temp_line_ht">20dp</dimen>
+    <dimen name="temp_hi_line_ht">25dp</dimen>
+    <dimen name="temp_lo_line_ht">15dp</dimen>
 </resources>
