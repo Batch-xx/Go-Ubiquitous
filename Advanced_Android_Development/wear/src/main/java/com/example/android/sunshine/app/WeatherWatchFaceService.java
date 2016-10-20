@@ -64,7 +64,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         //Offsets
         private int mTimeYOffset = 0;
         private int mDateYOffset = 0;
-        private int mTempTOffset = 0;
+        private int mTempYOffset = 0;
 
         //Line Height
         private int mTimeLineHt = 0;
@@ -76,6 +76,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         private Paint mDatePaint = null;
         private Paint mTimePaint = null;
         private Paint mTempPaint = null;
+        private Paint mImagePaint = null;
 
         //Font Properties
         private final Typeface NORMAL_TYPE_TIME = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
@@ -90,6 +91,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         //Updated Values
         private String mLowTemp = "--";
         private String mHiTemp = "--";
+        private Bitmap mWeatherImage = null;
 
 
         private Calendar mCalendar;
@@ -153,7 +155,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             Resources resources = WeatherWatchFaceService.this.getResources();
             mTimeYOffset = resources.getDimensionPixelOffset(R.dimen.time_y_offset);
             mDateYOffset = resources.getDimensionPixelOffset(R.dimen.date_y_offset);
-            mTempTOffset = resources.getDimensionPixelOffset(R.dimen.temp_y_offset);
+            mTempYOffset = resources.getDimensionPixelOffset(R.dimen.temp_y_offset);
 
             mTimeLineHt = resources.getDimensionPixelOffset(R.dimen.time_line_ht);
             mDateLineHt = resources.getDimensionPixelOffset(R.dimen.date_line_ht);
@@ -180,6 +182,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mTempPaint.setTypeface(NORMAL_TYPE_TEMP);
             mTempPaint.setTextSize(resources.getDimensionPixelSize(R.dimen.temp_line_ht));
 
+            mImagePaint = new Paint();
+            mImagePaint.setAntiAlias(true);
 
             mCalendar = Calendar.getInstance();
             mDate = new Date();
@@ -240,13 +244,19 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                     mCalendar.get(Calendar.MINUTE));
             float timeTextWidth = mTimePaint.measureText(timeText);
             canvas.drawText(timeText, (bounds.width() / 2) - (int) timeTextWidth / 2,
-                    bounds.height() / 2 - mTimeYOffset / 2, mTimePaint);
+                    bounds.height() / 2 - mTimeYOffset, mTimePaint);
 
             String dateText = String.format(loc, "%s %d, %d", monthConverter(mCalendar.get(Calendar.MONTH)),
                     mCalendar.get(Calendar.DAY_OF_MONTH), mCalendar.get(Calendar.YEAR));
             float dateTextWidth = mDatePaint.measureText(dateText);
             canvas.drawText(dateText, (bounds.width() / 2) - (int) dateTextWidth / 2,
-                    bounds.height() / 2 + mDateYOffset / 2, mDatePaint);
+                    bounds.height() / 2 + mDateYOffset, mDatePaint);
+
+            if(mWeatherImage != null){
+                canvas.drawBitmap(mWeatherImage,(bounds.width() / 2) - 100, bounds.height() / 2 + mTempYOffset ,mImagePaint);
+            }
+
+
         }
         private String hourConverter(int hour){
             boolean is24Hour = DateFormat.is24HourFormat(WeatherWatchFaceService.this);
@@ -462,7 +472,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                         .await().getInputStream();
 
                 if (assetStream == null) {
-                    Log.d(TAG, "Null/invaild asset");
+                    Log.d(TAG, "Null/invalid asset");
                 }
 
                 return BitmapFactory.decodeStream(assetStream);
@@ -470,9 +480,9 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             @Override
             protected void onPostExecute(Bitmap bitmap) {
-                //TODO place image into placeholder
+                mWeatherImage = Bitmap.createScaledBitmap(bitmap,70,70,false);
+                invalidate();
             }
-
         }
     }
 }
