@@ -75,11 +75,13 @@ public class WearWeatherUpdater implements
             cursor.close();
 
             PutDataMapRequest putDataMapReq = PutDataMapRequest.create(WEATHER_MOBILE_PATH);
-            putDataMapReq.getDataMap().putInt("HIGH", (int)high);
-            putDataMapReq.getDataMap().putInt("LOW", (int)low);
+            putDataMapReq.getDataMap().putString("HIGH", Utility.formatTemperature(context,high));
+            putDataMapReq.getDataMap().putString("LOW", Utility.formatTemperature(context,low));
             putDataMapReq.getDataMap().putString("DESC", desc);
             putDataMapReq.getDataMap().putAsset("IMG", imageAsset);
             putDataMapReq.setUrgent();
+
+
 
             Wearable.DataApi.putDataItem(mGoogleApiClient, putDataMapReq.asPutDataRequest()).await();
         }

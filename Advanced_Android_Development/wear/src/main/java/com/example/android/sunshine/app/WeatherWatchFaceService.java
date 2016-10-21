@@ -87,8 +87,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         private final Typeface BOLD_TYPE_TEMP = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
 
         //Updated Values
-        private int mLowTemp = 0;
-        private int mHiTemp = 0;
+        private String mLowTemp = "--";
+        private String mHiTemp = "--";
         private Bitmap mWeatherImage = null;
         private String mDesc = "-----";
 
@@ -272,13 +272,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                         bounds.height() / 2 + mTempYOffset + 46, mTempLoPaint);
             }
 
-            String hiTemp = String.format(loc,"%d\u00b0 ",(int)mHiTemp);
-            float hiTempTextWidth = mTempHiPaint.measureText(String.valueOf(mHiTemp));
-            canvas.drawText(hiTemp, (bounds.width() / 2) - (int) hiTempTextWidth / 2 ,
+            String hiTemp = String.format(loc,"%s",mHiTemp);
+            float hiTempTextWidth = mTempHiPaint.measureText(mHiTemp);
+            canvas.drawText(hiTemp, (bounds.width() / 2) - (int) hiTempTextWidth / 2 + 2,
                     bounds.height() / 2 + mTempYOffset + 50, mTempHiPaint);
 
-            String loTemp = String.format(loc,"%d\u00b0 ",(int)mLowTemp);
-            float loTempTextWidth = mTempLoPaint.measureText(String.valueOf(mLowTemp));
+            String loTemp = String.format(loc,"%s ", mLowTemp);
+            float loTempTextWidth = mTempLoPaint.measureText(mLowTemp);
             canvas.drawText(loTemp, (bounds.width() / 2) - (int) loTempTextWidth / 2 + 55,
                     bounds.height() / 2 + mTempYOffset + 46, mTempLoPaint);
 
@@ -419,8 +419,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                     if (event.getType() == DataEvent.TYPE_CHANGED) {
                         if (item.getUri().getPath().compareTo(WEATHER_MOBILE_PATH) == 0) {
                             DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-                            mHiTemp = dataMap.getInt("HIGH");
-                            mLowTemp = dataMap.getInt("LOW");
+                            mHiTemp = dataMap.getString("HIGH");
+                            mLowTemp = dataMap.getString("LOW");
                             mDesc = dataMap.get("DESC");
                             Asset imageAsset = dataMap.getAsset("IMG");
                             new LoadBitmapFromAsset().execute(imageAsset);
@@ -453,8 +453,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                             if (item.getUri().getPath().compareTo(WEATHER_MOBILE_PATH) == 0) {
                                 DataMapItem dataMapItem = DataMapItem.fromDataItem(item);
                                 DataMap map = dataMapItem.getDataMap();
-                                mHiTemp = map.getInt("HIGH");
-                                mLowTemp = map.getInt("LOW");
+                                mHiTemp = map.getString("HIGH");
+                                mLowTemp = map.getString("LOW");
                                 mDesc  = map.get("DESC");
                                 Asset imageAsset = dataMapItem.getDataMap().getAsset("IMG");
                                 new LoadBitmapFromAsset().execute(imageAsset);
