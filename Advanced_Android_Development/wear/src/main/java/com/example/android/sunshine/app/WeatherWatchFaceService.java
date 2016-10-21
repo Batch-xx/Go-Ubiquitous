@@ -74,6 +74,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         private Paint mTempHiPaint = null;
         private Paint mTempLoPaint = null;
         private Paint mImagePaint = null;
+        private Paint mDescPaint = null;
 
         //Font Properties
         private final Typeface NORMAL_TYPE_TIME = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
@@ -89,6 +90,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
         private int mLowTemp = 0;
         private int mHiTemp = 0;
         private Bitmap mWeatherImage = null;
+        private String mDesc = "-----";
 
 
         private Calendar mCalendar;
@@ -154,10 +156,6 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mDateYOffset = resources.getDimensionPixelOffset(R.dimen.date_y_offset);
             mTempYOffset = resources.getDimensionPixelOffset(R.dimen.temp_y_offset);
 
-//            mTimeLineHt = resources.getDimensionPixelOffset(R.dimen.time_line_ht);
-//            mDateLineHt = resources.getDimensionPixelOffset(R.dimen.date_line_ht);
-//            mTempLineHt = resources.getDimensionPixelOffset(R.dimen.time_line_ht);
-
             mBackgroundPaint = new Paint();
 
 
@@ -184,6 +182,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mTempLoPaint.setAntiAlias(true);
             mTempLoPaint.setTypeface(NORMAL_TYPE_TEMP);
             mTempLoPaint.setTextSize(resources.getDimensionPixelSize(R.dimen.temp_lo_line_ht));
+
+            mDescPaint = new Paint();
+            mDescPaint.setColor(Utility.TIME_COLOR_INTERACTIVE);
+            mDescPaint.setAntiAlias(true);
+            mDescPaint.setTypeface(NORMAL_TYPE_TEMP);
+            mDescPaint.setTextAlign(Paint.Align.CENTER);
+            mDescPaint.setTextSize(resources.getDimensionPixelSize(R.dimen.decs_line_ht));
 
             mImagePaint = new Paint();
             mImagePaint.setAntiAlias(true);
@@ -216,6 +221,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 mDatePaint.setAntiAlias(antialias);
                 mTempHiPaint.setAntiAlias(antialias);
                 mTempLoPaint.setAntiAlias(antialias);
+                mDescPaint.setAntiAlias(antialias);
             }
 
             mTimePaint.setTypeface(inAmbientMode == true ? NORMAL_TYPE_TIME : BOLD_TYPE_TIME);
@@ -259,6 +265,11 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                 if(mWeatherImage != null){
                     canvas.drawBitmap(mWeatherImage,(bounds.width() / 2) - 100, bounds.height() / 2 + mTempYOffset ,mImagePaint);
                 }
+            }else{
+                String desc = String.format(loc, "%s", mDesc);
+                float descTextWidth = mDescPaint.measureText("-----");
+                canvas.drawText(desc,(bounds.width() / 2) - (int) descTextWidth / 2 - 65 ,
+                        bounds.height() / 2 + mTempYOffset + 46, mTempLoPaint);
             }
 
             String hiTemp = String.format(loc,"%d\u00b0 ",(int)mHiTemp);
@@ -268,7 +279,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
 
             String loTemp = String.format(loc,"%d\u00b0 ",(int)mLowTemp);
             float loTempTextWidth = mTempLoPaint.measureText(String.valueOf(mLowTemp));
-            canvas.drawText(loTemp, (bounds.width() / 2) - (int) loTempTextWidth / 2 + 60,
+            canvas.drawText(loTemp, (bounds.width() / 2) - (int) loTempTextWidth / 2 + 55,
                     bounds.height() / 2 + mTempYOffset + 46, mTempLoPaint);
 
         }
@@ -410,13 +421,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                             DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
                             mHiTemp = dataMap.getInt("HIGH");
                             mLowTemp = dataMap.getInt("LOW");
-                            String desc = dataMap.get("DESC");
+                            mDesc = dataMap.get("DESC");
                             Asset imageAsset = dataMap.getAsset("IMG");
                             new LoadBitmapFromAsset().execute(imageAsset);
 
                             Log.d(TAG, "High: " + mHiTemp);
                             Log.d(TAG, "Low: " + mLowTemp);
-                            Log.d(TAG, "Desc: " + desc);
+                            Log.d(TAG, "Desc: " + mDesc);
                             invalidate();
                         }
                     } else if (event.getType() == DataEvent.TYPE_DELETED) {
@@ -444,13 +455,13 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
                                 DataMap map = dataMapItem.getDataMap();
                                 mHiTemp = map.getInt("HIGH");
                                 mLowTemp = map.getInt("LOW");
-                                String desc = map.get("DESC");
+                                mDesc  = map.get("DESC");
                                 Asset imageAsset = dataMapItem.getDataMap().getAsset("IMG");
                                 new LoadBitmapFromAsset().execute(imageAsset);
 
                                 Log.d(TAG, "High: " + mHiTemp);
                                 Log.d(TAG, "Low: " + mLowTemp);
-                                Log.d(TAG, "Desc: " + desc);
+                                Log.d(TAG, "Desc: " + mDesc);
                             }
                         }
                     }
