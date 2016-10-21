@@ -43,48 +43,53 @@ public class WearWeatherUpdater implements
     }
 
     public void updateWearable() {
-        mGoogleApiClient.blockingConnect();
-        final int INDEX_WEATHER_ID = 0;
-        final int INDEX_MAX_TEMP = 1;
-        final int INDEX_MIN_TEMP = 2;
-        final int INDEX_SHORT_DESC = 3;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                mGoogleApiClient.blockingConnect();
+                final int INDEX_WEATHER_ID = 0;
+                final int INDEX_MAX_TEMP = 1;
+                final int INDEX_MIN_TEMP = 2;
+                final int INDEX_SHORT_DESC = 3;
 
-        final String[] NOTIFY_WEATHER_PROJECTION = new String[]{
-                WeatherContract.WeatherEntry.COLUMN_WEATHER_ID,
-                WeatherContract.WeatherEntry.COLUMN_MAX_TEMP,
-                WeatherContract.WeatherEntry.COLUMN_MIN_TEMP,
-                WeatherContract.WeatherEntry.COLUMN_SHORT_DESC
-        };
-
-
-        String locationQuery = Utility.getPreferredLocation(context);
-        Uri weatherUri = WeatherContract.WeatherEntry.buildWeatherLocationWithDate(
-                locationQuery, System.currentTimeMillis());
-
-        Cursor cursor = context.getContentResolver().query(weatherUri, NOTIFY_WEATHER_PROJECTION, null, null, null);
-
-        if (cursor.moveToFirst()) {
-            int weatherId = cursor.getInt(INDEX_WEATHER_ID);
-            double high = cursor.getDouble(INDEX_MAX_TEMP);
-            double low = cursor.getDouble(INDEX_MIN_TEMP);
-            String desc = cursor.getString(INDEX_SHORT_DESC);
-            String artUrl = Utility.getArtUrlForWeatherCondition(context, weatherId);
-            int imageResourceId = Utility.getArtResourceForWeatherCondition(weatherId);
-            Asset imageAsset = createImageAsset(imageResourceId);
-
-            cursor.close();
-
-            PutDataMapRequest putDataMapReq = PutDataMapRequest.create(WEATHER_MOBILE_PATH);
-            putDataMapReq.getDataMap().putString("HIGH", Utility.formatTemperature(context,high));
-            putDataMapReq.getDataMap().putString("LOW", Utility.formatTemperature(context,low));
-            putDataMapReq.getDataMap().putString("DESC", desc);
-            putDataMapReq.getDataMap().putAsset("IMG", imageAsset);
-            putDataMapReq.setUrgent();
+                final String[] NOTIFY_WEATHER_PROJECTION = new String[]{
+                        WeatherContract.WeatherEntry.COLUMN_WEATHER_ID,
+                        WeatherContract.WeatherEntry.COLUMN_MAX_TEMP,
+                        WeatherContract.WeatherEntry.COLUMN_MIN_TEMP,
+                        WeatherContract.WeatherEntry.COLUMN_SHORT_DESC
+                };
 
 
+                String locationQuery = Utility.getPreferredLocation(context);
+                Uri weatherUri = WeatherContract.WeatherEntry.buildWeatherLocationWithDate(
+                        locationQuery, System.currentTimeMillis());
 
-            Wearable.DataApi.putDataItem(mGoogleApiClient, putDataMapReq.asPutDataRequest()).await();
-        }
+                Cursor cursor = context.getContentResolver().query(weatherUri, NOTIFY_WEATHER_PROJECTION, null, null, null);
+
+                if (cursor.moveToFirst()) {
+                    int weatherId = cursor.getInt(INDEX_WEATHER_ID);
+                    double high = cursor.getDouble(INDEX_MAX_TEMP);
+                    double low = cursor.getDouble(INDEX_MIN_TEMP);
+                    String desc = cursor.getString(INDEX_SHORT_DESC);
+                    String artUrl = Utility.getArtUrlForWeatherCondition(context, weatherId);
+                    int imageResourceId = Utility.getArtResourceForWeatherCondition(weatherId);
+                    Asset imageAsset = createImageAsset(imageResourceId);
+
+                    cursor.close();
+
+                    PutDataMapRequest putDataMapReq = PutDataMapRequest.create(WEATHER_MOBILE_PATH);
+                    putDataMapReq.getDataMap().putString("HIGH", Utility.formatTemperature(context,high));
+                    putDataMapReq.getDataMap().putString("LOW", Utility.formatTemperature(context,low));
+                    putDataMapReq.getDataMap().putString("DESC", desc);
+                    putDataMapReq.getDataMap().putAsset("IMG", imageAsset);
+                    putDataMapReq.setUrgent();
+
+
+
+                    Wearable.DataApi.putDataItem(mGoogleApiClient, putDataMapReq.asPutDataRequest()).await();
+                }
+            }
+        }).start();
     }
 
     private Asset createImageAsset(int imageResourceId) {
