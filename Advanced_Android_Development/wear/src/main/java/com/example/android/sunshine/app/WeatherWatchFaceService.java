@@ -268,14 +268,14 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             }else{
                 String desc = String.format(loc, "%s", mDesc);
                 float descTextWidth = mDescPaint.measureText("-----");
-                canvas.drawText(desc,(bounds.width() / 2) - (int) descTextWidth / 2 - 65 ,
+                canvas.drawText(desc,(bounds.width() / 2) - (int) descTextWidth / 2 - 67 ,
                         bounds.height() / 2 + mTempYOffset + 46, mTempLoPaint);
             }
 
             String hiTemp = String.format(loc,"%s",mHiTemp);
             float hiTempTextWidth = mTempHiPaint.measureText(mHiTemp);
-            canvas.drawText(hiTemp, (bounds.width() / 2) - (int) hiTempTextWidth / 2 + 2,
-                    bounds.height() / 2 + mTempYOffset + 50, mTempHiPaint);
+            canvas.drawText(hiTemp, (bounds.width() / 2) - (int) hiTempTextWidth / 2 + 4,
+                    bounds.height() / 2 + mTempYOffset + 52, mTempHiPaint);
 
             String loTemp = String.format(loc,"%s ", mLowTemp);
             float loTempTextWidth = mTempLoPaint.measureText(mLowTemp);
