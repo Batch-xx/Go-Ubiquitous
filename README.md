@@ -3,7 +3,7 @@
 <img src="./Advanced_Android_Development/wear/src/main/res/drawable/Ambient.png" width="315" height="315"/>
 
 ## Project Overview
-In this project, you will build a wearable watch face for Sunshine to run on an Android Wear device.
+Android wearable watch face that displays weather information supplied by the  Sunshine app  running on an Android Wear device.
 
 ## Setup
 This project requires an Open Weather Map API key, which you can obtain from [Open Weather Map site](https://openweathermap.org/api). After you obtain an Open Weather Map key enter it in the App build.gradle file at:
