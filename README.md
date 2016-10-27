@@ -1,5 +1,5 @@
 # Go-Ubiquitous
-<img src="./blob/master/Advanced_Android_Development/wear/src/main/res/drawable/interactive.png" width="315" height="315 &nbsp"/>
+<img src="./Advanced_Android_Development/wear/src/main/res/drawable/interactive.png" width="315" height="315 &nbsp"/>
 <img src="./blob/master/Advanced_Android_Development/wear/src/main/res/drawable/Ambient.png" width="315" height="315"/>
 
 ## Project Overview
