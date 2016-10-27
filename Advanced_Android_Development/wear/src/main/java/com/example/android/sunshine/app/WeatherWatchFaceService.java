@@ -187,7 +187,7 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             mDescPaint.setColor(Utility.TIME_COLOR_INTERACTIVE);
             mDescPaint.setAntiAlias(true);
             mDescPaint.setTypeface(NORMAL_TYPE_TEMP);
-            mDescPaint.setTextAlign(Paint.Align.CENTER);
+            mDescPaint.setTextAlign(Paint.Align.RIGHT);
             mDescPaint.setTextSize(resources.getDimensionPixelSize(R.dimen.decs_line_ht));
 
             mImagePaint = new Paint();
@@ -268,8 +268,8 @@ public class WeatherWatchFaceService extends CanvasWatchFaceService {
             }else{
                 String desc = String.format(loc, "%s", mDesc);
                 float descTextWidth = mDescPaint.measureText("-----");
-                canvas.drawText(desc,(bounds.width() / 2) - (int) descTextWidth / 2 - 67 ,
-                        bounds.height() / 2 + mTempYOffset + 46, mTempLoPaint);
+                canvas.drawText(desc,(bounds.width() / 2) - (int) descTextWidth / 2 - 20 ,
+                        bounds.height() / 2 + mTempYOffset + 46, mDescPaint);
             }
 
             String hiTemp = String.format(loc,"%s",mHiTemp);
