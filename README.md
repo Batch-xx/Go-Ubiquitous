@@ -6,7 +6,7 @@
 In this project, you will build a wearable watch face for Sunshine to run on an Android Wear device.
 
 ## Setup
-This project requires a Open Weather Map API key, which you can obtain from [Open Weather Map site](https://openweathermap.org/api). After you obtain an Open Weather Map key enter it in the App build.gradle file at:
+This project requires an Open Weather Map API key, which you can obtain from [Open Weather Map site](https://openweathermap.org/api). After you obtain an Open Weather Map key enter it in the App build.gradle file at:
 <pre><code>
 android {
    ...
